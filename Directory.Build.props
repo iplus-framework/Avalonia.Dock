@@ -17,4 +17,15 @@
   <PropertyGroup>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <UseAvaloniaFork>True</UseAvaloniaFork>
+    <AvaloniaBuildFramework>net8.0</AvaloniaBuildFramework>
+    <AvaloniaRootDir>..\..\..\av_main</AvaloniaRootDir>
+    <AvaloniaNativeBuildDir>$(AvaloniaRootDir)\packages\Avalonia\bin</AvaloniaNativeBuildDir>
+    <AvaloniaMarkupBuildDir>$(AvaloniaRootDir)\src\Markup\Avalonia.Markup.Xaml.Loader\bin</AvaloniaMarkupBuildDir>
+    <AvaloniaSkiaBuildDir>$(AvaloniaRootDir)\src\Skia\Avalonia.Skia\bin</AvaloniaSkiaBuildDir>
+    <AvaloniaDataGridIncludeDir>..\..\..\Avalonia.Controls.DataGrid\artifacts\bin</AvaloniaDataGridIncludeDir>
+    <IncludeAvaloniaGenerators Condition="'$(UseAvaloniaFork)' == 'True'">true</IncludeAvaloniaGenerators>
+  </PropertyGroup>
 </Project>

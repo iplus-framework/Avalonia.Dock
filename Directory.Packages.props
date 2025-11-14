@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AvaloniaVersion>11.3.6</AvaloniaVersion>
+    <!--<ManagePackageVersionsCentrally Condition="'$(UseAvaloniaFork)' == 'False'">true</ManagePackageVersionsCentrally>-->
+    <AvaloniaVersion>11.3.8</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
@@ -11,8 +12,10 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Browser" Version="$(AvaloniaVersion)" />
-    <PackageVersion Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Controls.DataGrid" Version="11.3.6" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.BuildServices" Version="11.3.1" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="StaticViewLocator" Version="0.0.1" />
     <PackageVersion Include="reactiveui" Version="20.4.1" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -36,7 +39,6 @@
     </PackageVersion>
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Nuke.Common" Version="9.0.4" />
     <PackageVersion Include="System.Runtime.Serialization.Formatters" Version="9.0.9" />
     <PackageVersion Include="protobuf-net" Version="3.2.56" />
