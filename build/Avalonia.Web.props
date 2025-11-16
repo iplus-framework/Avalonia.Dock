@@ -3,9 +3,7 @@
   <ItemGroup Condition="'$(UseAvaloniaFork)' == 'False'">
     <PackageReference Include="Avalonia.Browser" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'True'">
-    <Reference Include="Avalonia.Browser">
-      <HintPath>$(AvaloniaRootDir)\src\Browser\Avalonia.Browser\bin\$(Configuration)\$(TargetFramework)\Avalonia.Browser.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseBrowserInclude.props" />
+  <!-- End iPlus settings and overrides -->
 </Project>

@@ -4,15 +4,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'True'">
-    <Reference Include="Avalonia.Themes.Fluent">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.Themes.Fluent\bin\$(Configuration)\$(TargetFramework)\Avalonia.Themes.Fluent.dll</HintPath>
-    </Reference>
-    <Reference Include="Avalonia.Themes.Simple">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.Themes.Simple\bin\$(Configuration)\$(TargetFramework)\Avalonia.Themes.Simple.dll</HintPath>
-    </Reference>
-    <Reference Include="Avalonia.Fonts.Inter">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.Fonts.Inter\bin\$(Configuration)\$(TargetFramework)\Avalonia.Fonts.Inter.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseFluentInclude.props" />
+  <!-- End iPlus settings and overrides -->
 </Project>

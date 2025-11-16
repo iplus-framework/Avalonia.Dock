@@ -3,15 +3,8 @@
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'True'">
-    <Reference Include="Avalonia.Headless">
-      <HintPath>$(AvaloniaRootDir)\src\Headless\Avalonia.Headless\bin\$(Configuration)\$(TargetFramework)\Avalonia.Headless.dll</HintPath>
-    </Reference>
-    <Reference Include="Avalonia.Headless.XUnit">
-      <HintPath>$(AvaloniaRootDir)\src\Headless\Avalonia.Headless.XUnit\bin\$(Configuration)\$(TargetFramework)\Avalonia.Headless.XUnit.dll</HintPath>
-    </Reference>    
-    <Reference Include="Avalonia.Themes.Fluent">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.Themes.Fluent\bin\$(Configuration)\$(TargetFramework)\Avalonia.Themes.Fluent.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseHeadlessInclude.props" />
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseFluentInclude.props" />
+  <!-- End iPlus settings and overrides -->
 </Project>

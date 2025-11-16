@@ -3,9 +3,7 @@
   <ItemGroup Condition="'$(UseAvaloniaFork)' == 'False'">
     <PackageReference Include="Avalonia.Desktop" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'True'">
-    <Reference Include="Avalonia.Desktop">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.Desktop\bin\$(Configuration)\$(TargetFramework)\Avalonia.Desktop.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseDesktopInclude.props" />
+  <!-- End iPlus settings and overrides -->
 </Project>

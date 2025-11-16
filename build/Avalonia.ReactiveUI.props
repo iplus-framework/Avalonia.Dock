@@ -3,9 +3,7 @@
   <ItemGroup Condition="'$(UseAvaloniaFork)' == 'False'">
     <PackageReference Include="Avalonia.ReactiveUI" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'True'">
-    <Reference Include="Avalonia.ReactiveUI">
-      <HintPath>$(AvaloniaRootDir)\src\Avalonia.ReactiveUI\bin\$(Configuration)\$(TargetFramework)\Avalonia.ReactiveUI.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../../iPlus/build/AvaloniaBaseReactiveInclude.props" />
+  <!-- End iPlus settings and overrides -->
 </Project>

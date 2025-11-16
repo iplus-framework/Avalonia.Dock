@@ -1,10 +1,14 @@
 <Project>
+  <!-- iPlus settings and overrides -->
+  <Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="$(MSBuildThisFileDirectory)../iPlus/Directory.Packages.props" />
+  <!-- End iPlus settings and overrides -->
+  
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!--<ManagePackageVersionsCentrally Condition="'$(UseAvaloniaFork)' == 'False'">true</ManagePackageVersionsCentrally>-->
-    <AvaloniaVersion>11.3.8</AvaloniaVersion>
+    <AvaloniaVersion Condition="'$(AvaloniaVersion)' == ''">11.3.8</AvaloniaVersion>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(UseAvaloniaFork)' == 'False'">
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
