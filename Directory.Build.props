@@ -1,7 +1,11 @@
 ﻿<Project>
   <!-- iPlus settings and overrides -->
+  <PropertyGroup>
+    <IsAvaloniaUIProject>true</IsAvaloniaUIProject>
+  </PropertyGroup>  
   <Import Project="../iPlus/build/Avalonia.Build.props" />
-  <!-- End iPlus settings and overrides -->  
+  <!--<Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="../iPlus/build/AvaloniaBaseBuildServicesInclude.props" />-->
+ <!-- End iPlus settings and overrides -->  
   <PropertyGroup>
     <VersionPrefix>11.3.6.5</VersionPrefix>
     <VersionSuffix></VersionSuffix>
