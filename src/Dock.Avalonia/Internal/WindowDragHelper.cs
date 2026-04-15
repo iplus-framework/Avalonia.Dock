@@ -15,27 +15,44 @@ namespace Dock.Avalonia.Internal;
 /// <summary>
 /// Helper that enables starting window drag operations from custom controls.
 /// </summary>
-internal class WindowDragHelper
+public class WindowDragHelper
 {
     private readonly Control _owner;
     private readonly Func<bool> _isEnabled;
     private readonly Func<Control?, bool> _canStartDrag;
+    private readonly Func<Control?, WindowDragDockScope> _getDockScope;
+    private readonly bool _handlePointerPressed;
+    private bool _handledPointerPressed;
     private Point _dragStartPoint;
     private bool _pointerPressed;
     private bool _isDragging;
+    private WindowDragDockScope _dockScope = WindowDragDockScope.FullWindow;
     private PointerPressedEventArgs? _lastPointerPressedArgs;
     private Window? _dragWindow;
     private EventHandler<PixelPointEventArgs>? _positionChangedHandler;
     private IDisposable[]? _disposables;
     private IDisposable? _releasedEventDisposable;
 
-    public WindowDragHelper(Control owner, Func<bool> isEnabled, Func<Control?, bool> canStartDrag)
+    /// <summary>
+    /// Initializes a helper that starts tracked window move drags from a custom control.
+    /// </summary>
+    public WindowDragHelper(
+        Control owner,
+        Func<bool> isEnabled,
+        Func<Control?, bool> canStartDrag,
+        bool handlePointerPressed = true,
+        Func<Control?, WindowDragDockScope>? getDockScope = null)
     {
         _owner = owner;
         _isEnabled = isEnabled;
         _canStartDrag = canStartDrag;
+        _handlePointerPressed = handlePointerPressed;
+        _getDockScope = getDockScope ?? (_ => WindowDragDockScope.FullWindow);
     }
 
+    /// <summary>
+    /// Attaches pointer handlers to the owner control.
+    /// </summary>
     public void Attach()
     {
         Detach();
@@ -47,6 +64,9 @@ internal class WindowDragHelper
         ];
     }
 
+    /// <summary>
+    /// Detaches pointer handlers and clears any in-progress drag state.
+    /// </summary>
     public void Detach()
     {
         if (_disposables != null)
@@ -57,6 +77,27 @@ internal class WindowDragHelper
             }
             _disposables = null;
         }
+
+        _releasedEventDisposable?.Dispose();
+        _releasedEventDisposable = null;
+
+        if (_dragWindow is HostWindow hostWindow)
+        {
+            hostWindow.CancelExternalWindowDrag();
+        }
+
+        if (_dragWindow is not null && _positionChangedHandler is not null)
+        {
+            _dragWindow.PositionChanged -= _positionChangedHandler;
+            _positionChangedHandler = null;
+        }
+
+        _dragWindow = null;
+        _pointerPressed = false;
+        _isDragging = false;
+        _handledPointerPressed = false;
+        _dockScope = WindowDragDockScope.FullWindow;
+        _lastPointerPressedArgs = null;
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -67,6 +108,7 @@ internal class WindowDragHelper
         }
 
         _lastPointerPressedArgs = e;
+        _handledPointerPressed = false;
 
         if (!e.GetCurrentPoint(_owner).Properties.IsLeftButtonPressed)
         {
@@ -78,7 +120,16 @@ internal class WindowDragHelper
         {
             _dragStartPoint = e.GetPosition(_owner);
             _pointerPressed = true;
-            e.Handled = true;
+            _dockScope = _getDockScope(source);
+            if (_handlePointerPressed)
+            {
+                e.Handled = true;
+                _handledPointerPressed = true;
+            }
+            else
+            {
+                _handledPointerPressed = false;
+            }
         }
     }
 
@@ -92,8 +143,11 @@ internal class WindowDragHelper
             return;
         }
 
+        var shouldHandleRelease = _isDragging || _handledPointerPressed;
+
         _pointerPressed = false;
         _isDragging = false;
+        _handledPointerPressed = false;
 
         if (_dragWindow is not null)
         {
@@ -105,20 +159,17 @@ internal class WindowDragHelper
 
             if (_dragWindow is HostWindow hostWindow)
             {
-                if (hostWindow.HostWindowState is HostWindowState state)
-                {
-                    var point = hostWindow.PointToScreen(e.GetPosition(hostWindow)) -
-                                hostWindow.PointToScreen(new Point(0, 0));
-                    state.Process(new PixelPoint(point.X, point.Y), EventType.Released);
-                }
-
-                hostWindow.Window?.Factory?.OnWindowMoveDragEnd(hostWindow.Window);
+                hostWindow.EndExternalWindowDrag(e);
             }
         }
 
         _dragWindow = null;
+        _dockScope = WindowDragDockScope.FullWindow;
 
-        e.Handled = true;
+        if (shouldHandleRelease)
+        {
+            e.Handled = true;
+        }
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
@@ -144,7 +195,7 @@ internal class WindowDragHelper
             return;
         }
 
-        var root = _owner.GetVisualRoot();
+        var root = TopLevel.GetTopLevel(_owner);
 
         if (root is not HostWindow hostWindow)
         {
@@ -169,40 +220,13 @@ internal class WindowDragHelper
         _isDragging = true;
         _pointerPressed = false;
 
-        var dockWindow = hostWindow.Window;
-        if (dockWindow?.Factory?.OnWindowMoveDragBegin(dockWindow) != true)
+        if (!hostWindow.TryBeginExternalWindowDrag(_lastPointerPressedArgs, _dockScope))
         {
             _isDragging = false;
             return;
         }
 
-        if (DockSettings.BringWindowsToFrontOnDrag && dockWindow.Factory is { } factory)
-        {
-            WindowActivationHelper.ActivateAllWindows(factory, hostWindow);
-        }
-
-        if (hostWindow.HostWindowState is HostWindowState state)
-        {
-            var start = hostWindow.PointToScreen(_lastPointerPressedArgs.GetPosition(hostWindow)) - hostWindow.PointToScreen(new Point(0, 0));
-            state.Process(new PixelPoint(start.X, start.Y), EventType.Pressed);
-        }
-
         _dragWindow = hostWindow;
-
-        _positionChangedHandler = (_, _) =>
-        {
-            if (hostWindow.Window is { } dw)
-            {
-                dw.Factory?.OnWindowMoveDrag(dw);
-            }
-
-            if (hostWindow.HostWindowState is HostWindowState st)
-            {
-                st.Process(_dragWindow.Position, EventType.Moved);
-            }
-        };
-
-        hostWindow.PositionChanged += _positionChangedHandler;
         
         _releasedEventDisposable?.Dispose();
         _releasedEventDisposable = SubscribeToPointerReleased(hostWindow);
@@ -215,7 +239,11 @@ internal class WindowDragHelper
         return window.AddDisposableHandler(InputElement.PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Tunnel);
     }
 
-    internal static bool IsChildOfType<T>(Control owner, Control control) where T : Control
+    /// <summary>
+    /// Determines whether <paramref name="control"/> has an ancestor of type <typeparamref name="T"/>
+    /// before reaching <paramref name="owner"/>.
+    /// </summary>
+    public static bool IsChildOfType<T>(Control owner, Control control) where T : Control
     {
         var parent = control;
         while (parent != null && parent != owner)

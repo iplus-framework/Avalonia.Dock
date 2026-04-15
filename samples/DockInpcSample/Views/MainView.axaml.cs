@@ -27,13 +27,7 @@ public partial class MainView : UserControl
         InitializeThemes();
         InitializeDockState();
     }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
-    private void InitializeThemes()
+private void InitializeThemes()
     {
         var dark = false;
 
@@ -69,7 +63,7 @@ public partial class MainView : UserControl
             return;
         }
 
-        var storageProvider = (this.GetVisualRoot() as TopLevel)?.StorageProvider;
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {
             return;
@@ -116,7 +110,7 @@ public partial class MainView : UserControl
             return;
         }
 
-        var storageProvider = (this.GetVisualRoot() as TopLevel)?.StorageProvider;
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {
             return;

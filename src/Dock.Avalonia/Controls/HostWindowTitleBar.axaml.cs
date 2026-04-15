@@ -2,11 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 using System;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
-using Avalonia.Controls.Chrome;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using Dock.Avalonia.Automation.Peers;
 
 namespace Dock.Avalonia.Controls;
 
@@ -14,12 +15,18 @@ namespace Dock.Avalonia.Controls;
 /// Interaction logic for <see cref="HostWindowTitleBar"/> xaml.
 /// </summary>
 [TemplatePart("PART_Background", typeof(Control))]
-public class HostWindowTitleBar : TitleBar
+public class HostWindowTitleBar : TemplatedControl
 {
     internal Control? BackgroundControl { get; private set; }
 
     /// <inheritdoc/>
     protected override Type StyleKeyOverride => typeof(HostWindowTitleBar);
+
+    /// <inheritdoc />
+    protected override AutomationPeer OnCreateAutomationPeer()
+    {
+        return new HostWindowTitleBarAutomationPeer(this);
+    }
 
     /// <inheritdoc/>
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)

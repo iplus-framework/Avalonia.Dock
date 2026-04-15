@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
+using Dock.Model;
 using Dock.Model.Core;
 using Dock.Settings;
 
@@ -53,8 +54,11 @@ internal class HostWindowState : DockManagerState, IHostWindowState
     private readonly HostWindow _hostWindow;
     private readonly WindowDragContext _context = new();
 
-    public HostWindowState(IDockManager dockManager, HostWindow hostWindow) 
-        : base(dockManager)
+    public HostWindowState(
+        IDockManager dockManager,
+        HostWindow hostWindow,
+        IGlobalDockingService? globalDockingService = null)
+        : base(dockManager, globalDockingService)
     {
         _hostWindow = hostWindow;
     }
@@ -97,7 +101,7 @@ internal class HostWindowState : DockManagerState, IHostWindowState
         LocalAdornerHelper.SetGlobalDockActive(globalOperation != DockOperation.None);
     }
 
-    private void Drop(Point point, DragAction dragAction, Control dropControl, Visual relativeTo)
+    private bool Drop(Point point, DragAction dragAction, Control dropControl, Visual relativeTo)
     {
         var localOperation = DockOperation.Window;
         var globalOperation = DockOperation.None;
@@ -116,7 +120,7 @@ internal class HostWindowState : DockManagerState, IHostWindowState
 
         if (DropControl is null)
         {
-            return;
+            return false;
         }
 
         var layout = _hostWindow.Window?.Layout;
@@ -125,27 +129,19 @@ internal class HostWindowState : DockManagerState, IHostWindowState
         {
             if (DropControl is not { } dropCtrl)
             {
-                return;
-            }
-
-            var dockControl = dropCtrl.FindAncestorOfType<DockControl>();
-            if (dockControl is null)
-            {
-                return;
+                return false;
             }
 
             if (layout?.ActiveDockable is { } sourceDockable
-                && dockControl.Layout is { } dockControlLayout
-                && dockControlLayout.ActiveDockable is IDock dockControlActiveDock)
+                && ResolveGlobalTargetDock(dropCtrl) is { } targetDock)
             {
-                var targetDock = DockHelpers.FindProportionalDock(dockControlActiveDock) ?? dockControlActiveDock;
-                
                 if (!ValidateGlobalTarget(sourceDockable, targetDock))
                 {
-                    return;
+                    return false;
                 }
 
                 Execute(point, globalOperation, dragAction, relativeTo, sourceDockable, targetDock);
+                return true;
             }
         }
         else
@@ -156,9 +152,12 @@ internal class HostWindowState : DockManagerState, IHostWindowState
                 if (localOperation != DockOperation.Window)
                 {
                     Execute(point, localOperation, dragAction, relativeTo, sourceDockable, targetDockable);
+                    return true;
                 }
             }
         }
+
+        return false;
     }
 
     private void Leave()
@@ -168,6 +167,12 @@ internal class HostWindowState : DockManagerState, IHostWindowState
 
     private bool ValidateLocal(Point point, DockOperation operation, DragAction dragAction, Visual relativeTo)
     {
+        if (!DockManager.IsDockingEnabled)
+        {
+            LogDropRejection(nameof(ValidateLocal), "Docking is disabled.");
+            return false;
+        }
+
         var layout = _hostWindow.Window?.Layout;
         if (layout?.FocusedDockable is not { } sourceDockable)
         {
@@ -195,6 +200,12 @@ internal class HostWindowState : DockManagerState, IHostWindowState
 
     private bool ValidateGlobal(Point point, DockOperation operation, DragAction dragAction, Visual relativeTo)
     {
+        if (!DockManager.IsDockingEnabled)
+        {
+            LogDropRejection(nameof(ValidateGlobal), "Docking is disabled.");
+            return false;
+        }
+
         var layout = _hostWindow.Window?.Layout;
         if (layout?.FocusedDockable is not { } sourceDockable)
         {
@@ -208,15 +219,12 @@ internal class HostWindowState : DockManagerState, IHostWindowState
             return false;
         }
 
-        var dockControl = dropCtrl.FindAncestorOfType<DockControl>();
-        if (dockControl?.Layout is not { ActiveDockable: IDock activeDock })
+        var targetDock = ResolveGlobalTargetDock(dropCtrl);
+        if (targetDock is null)
         {
-            LogDropRejection(nameof(ValidateGlobal), "Unable to locate an active dock for the DropControl.");
+            LogDropRejection(nameof(ValidateGlobal), "Unable to resolve global docking target for DropControl.");
             return false;
         }
-
-        // Use the same target dock as execution for consistency
-        var targetDock = DockHelpers.FindProportionalDock(activeDock) ?? activeDock;
 
         // Check if the target dock (or any ancestor) has global docking enabled
         if (!DockInheritanceHelper.GetEffectiveEnableGlobalDocking(targetDock))
@@ -252,7 +260,7 @@ internal class HostWindowState : DockManagerState, IHostWindowState
         {
             LogDropRejection(
                 nameof(ValidateGlobal),
-                $"DockManager rejected global operation {operation} for '{sourceDockable.Title}' -> '{targetDock.Title}'.");
+                WithCapabilityDiagnostics($"DockManager rejected global operation {operation} for '{sourceDockable.Title}' -> '{targetDock.Title}'."));
         }
 
         return isValid;
@@ -281,6 +289,18 @@ internal class HostWindowState : DockManagerState, IHostWindowState
     /// <param name="eventType">The pointer event type.</param>
     public void Process(PixelPoint point, EventType eventType)
     {
+        if (!DockManager.IsDockingEnabled)
+        {
+            if (_context.PointerPressed || _context.DoDragDrop)
+            {
+                Leave();
+                _context.End();
+                DropControl = null;
+            }
+
+            return;
+        }
+
         switch (eventType)
         {
             case EventType.Pressed:
@@ -291,7 +311,11 @@ internal class HostWindowState : DockManagerState, IHostWindowState
                     break;
                 }
 
-                if (_hostWindow.DataContext is IDockable { CanDrag: false })
+                if (_hostWindow.DataContext is IDockable dockable
+                    && !DockCapabilityResolver.IsEnabled(
+                        dockable,
+                        DockCapability.Drag,
+                        DockCapabilityResolver.ResolveOperationDock(dockable)))
                 {
                     break;
                 }
@@ -307,6 +331,8 @@ internal class HostWindowState : DockManagerState, IHostWindowState
             {
                 if (_context.DoDragDrop)
                 {
+                    var executed = false;
+
                     if (_context.TargetDockControl is { } && DropControl is { })
                     {
                         var isDropEnabled = true;
@@ -318,9 +344,21 @@ internal class HostWindowState : DockManagerState, IHostWindowState
 
                         if (isDropEnabled)
                         {
-                            Drop(_context.TargetPoint, _context.DragAction, DropControl, _context.TargetDockControl);
+                            executed = Drop(_context.TargetPoint, _context.DragAction, DropControl, _context.TargetDockControl);
                         }
-                    } 
+                    }
+
+                    if (!executed
+                        && _hostWindow.DataContext is IDockable dockable
+                        && DockCapabilityResolver.IsEnabled(
+                            dockable,
+                            DockCapability.Float,
+                            DockCapabilityResolver.ResolveOperationDock(dockable))
+                        && _hostWindow.Window?.Factory is { } factory)
+                    {
+                        dockable.SetPointerScreenPosition(point.X, point.Y);
+                        factory.FloatDockable(dockable);
+                    }
                 }
 
                 Leave();
@@ -376,7 +414,9 @@ internal class HostWindowState : DockManagerState, IHostWindowState
                     }
 
                     var dockControlPoint = dockControl.PointToClient(screenPoint);
-                    var dropControl = DockHelpers.GetControl(dockControl, dockControlPoint, DockProperties.IsDropAreaProperty);
+                    var dropControl = _hostWindow.WindowDragDockScope == WindowDragDockScope.WindowChrome
+                        ? DockHelpers.GetExternalControl(dockControl, dockControlPoint, DockProperties.IsDropAreaProperty)
+                        : DockHelpers.GetControlIncludingExternal(dockControl, dockControlPoint, DockProperties.IsDropAreaProperty);
                     if (dropControl is { })
                     {
                         var isDropEnabled = dropControl.GetValue(DockProperties.IsDropEnabledProperty);

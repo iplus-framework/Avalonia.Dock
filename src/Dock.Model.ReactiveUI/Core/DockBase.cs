@@ -7,13 +7,13 @@ using System.Windows.Input;
 using Dock.Model.Adapters;
 using Dock.Model.Core;
 using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
 namespace Dock.Model.ReactiveUI.Core;
 
 /// <summary>
 /// Dock base class.
 /// </summary>
-[DataContract(IsReference = true)]
 public abstract partial class DockBase : DockableBase, IDock
 {
     internal readonly INavigateAdapter _navigateAdapter;
@@ -50,31 +50,43 @@ public abstract partial class DockBase : DockableBase, IDock
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial IList<IDockable>? VisibleDockables { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial IDockable? ActiveDockable { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial IDockable? DefaultDockable { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial IDockable? FocusedDockable { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial bool IsActive { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial int OpenedDockablesCount { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial bool CanCloseLastDockable { get; set; }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    [Reactive]
+    public partial DockCapabilityPolicy? DockCapabilityPolicy { get; set; }
 
     /// <inheritdoc/>
     [IgnoreDataMember]

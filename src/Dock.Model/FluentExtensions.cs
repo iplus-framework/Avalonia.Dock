@@ -561,6 +561,22 @@ public static class FluentExtensions
     /// <returns>The same instance for chaining.</returns>
     public static T WithCanPin<T>(this T dockable, bool value) where T : IDockable { dockable.CanPin = value; return dockable; }
     /// <summary>
+    /// Sets the <see cref="IDockable.KeepPinnedDockableVisible"/> flag.
+    /// </summary>
+    /// <typeparam name="T">Dockable type.</typeparam>
+    /// <param name="dockable">The instance to configure.</param>
+    /// <param name="value">Whether pinned previews stay visible.</param>
+    /// <returns>The same instance for chaining.</returns>
+    public static T WithKeepPinnedDockableVisible<T>(this T dockable, bool value) where T : IDockable { dockable.KeepPinnedDockableVisible = value; return dockable; }
+    /// <summary>
+    /// Sets the <see cref="IDockable.PinnedDockDisplayModeOverride"/> override.
+    /// </summary>
+    /// <typeparam name="T">Dockable type.</typeparam>
+    /// <param name="dockable">The instance to configure.</param>
+    /// <param name="mode">Pinned dock display mode override.</param>
+    /// <returns>The same instance for chaining.</returns>
+    public static T WithPinnedDockDisplayModeOverride<T>(this T dockable, PinnedDockDisplayMode? mode) where T : IDockable { dockable.PinnedDockDisplayModeOverride = mode; return dockable; }
+    /// <summary>
     /// Sets the <see cref="IDockable.CanFloat"/> flag.
     /// </summary>
     /// <typeparam name="T">Dockable type.</typeparam>
@@ -585,6 +601,14 @@ public static class FluentExtensions
     /// <returns>The same instance for chaining.</returns>
     public static T WithCanDrop<T>(this T dockable, bool value) where T : IDockable { dockable.CanDrop = value; return dockable; }
     /// <summary>
+    /// Sets the <see cref="IDockable.CanDockAsDocument"/> flag.
+    /// </summary>
+    /// <typeparam name="T">Dockable type.</typeparam>
+    /// <param name="dockable">The instance to configure.</param>
+    /// <param name="value">Whether it can be docked as a document.</param>
+    /// <returns>The same instance for chaining.</returns>
+    public static T WithCanDockAsDocument<T>(this T dockable, bool value) where T : IDockable { dockable.CanDockAsDocument = value; return dockable; }
+    /// <summary>
     /// Sets the <see cref="IDockable.IsModified"/> flag.
     /// </summary>
     /// <typeparam name="T">Dockable type.</typeparam>
@@ -600,6 +624,33 @@ public static class FluentExtensions
     /// <param name="group">Dock group identifier.</param>
     /// <returns>The same instance for chaining.</returns>
     public static T WithDockGroup<T>(this T dockable, string? group) where T : IDockable { dockable.DockGroup = group; return dockable; }
+    /// <summary>
+    /// Sets the allowed dock operations when this dockable is the drag source.
+    /// </summary>
+    /// <typeparam name="T">Dockable type.</typeparam>
+    /// <param name="dockable">The instance to configure.</param>
+    /// <param name="value">Allowed dock operations.</param>
+    /// <returns>The same instance for chaining.</returns>
+    public static T WithAllowedDockOperations<T>(this T dockable, DockOperationMask value)
+        where T : IDockableDockingRestrictions
+    {
+        dockable.AllowedDockOperations = value;
+        return dockable;
+    }
+
+    /// <summary>
+    /// Sets the allowed dock operations when this dockable is the drop target.
+    /// </summary>
+    /// <typeparam name="T">Dockable type.</typeparam>
+    /// <param name="dockable">The instance to configure.</param>
+    /// <param name="value">Allowed drop operations.</param>
+    /// <returns>The same instance for chaining.</returns>
+    public static T WithAllowedDropOperations<T>(this T dockable, DockOperationMask value)
+        where T : IDockableDockingRestrictions
+    {
+        dockable.AllowedDropOperations = value;
+        return dockable;
+    }
 
     // IDock fluent setters and helpers
     /// <summary>
@@ -767,12 +818,26 @@ public static class FluentExtensions
     /// <returns>The same root dock.</returns>
     public static IRootDock WithPinnedDock(this IRootDock dock, IToolDock? pinned) { dock.PinnedDock = pinned; return dock; }
     /// <summary>
+    /// Sets the pinned dock display mode of the root.
+    /// </summary>
+    /// <param name="dock">The root dock.</param>
+    /// <param name="mode">Pinned dock display mode.</param>
+    /// <returns>The same root dock.</returns>
+    public static IRootDock WithPinnedDockDisplayMode(this IRootDock dock, PinnedDockDisplayMode mode) { dock.PinnedDockDisplayMode = mode; return dock; }
+    /// <summary>
     /// Sets the main window of the root.
     /// </summary>
     /// <param name="dock">The root dock.</param>
     /// <param name="window">Window instance.</param>
     /// <returns>The same root dock.</returns>
     public static IRootDock WithWindow(this IRootDock dock, IDockWindow? window) { dock.Window = window; return dock; }
+    /// <summary>
+    /// Sets the floating window host mode for the root.
+    /// </summary>
+    /// <param name="dock">The root dock.</param>
+    /// <param name="mode">Host mode.</param>
+    /// <returns>The same root dock.</returns>
+    public static IRootDock WithFloatingWindowHostMode(this IRootDock dock, DockFloatingWindowHostMode mode) { dock.FloatingWindowHostMode = mode; return dock; }
     /// <summary>
     /// Adds owned windows to the root.
     /// </summary>
@@ -890,6 +955,27 @@ public static class FluentExtensions
     /// <param name="layout">Tabs layout.</param>
     /// <returns>The same document dock.</returns>
     public static IDocumentDock WithTabsLayout(this IDocumentDock dock, DocumentTabLayout layout) { dock.TabsLayout = layout; return dock; }
+    /// <summary>
+    /// Sets the layout mode for the document dock.
+    /// </summary>
+    /// <param name="dock">The document dock.</param>
+    /// <param name="layoutMode">Layout mode.</param>
+    /// <returns>The same document dock.</returns>
+    public static IDocumentDock WithLayoutMode(this IDocumentDock dock, DocumentLayoutMode layoutMode) { dock.LayoutMode = layoutMode; return dock; }
+    /// <summary>
+    /// Sets when document close buttons are displayed.
+    /// </summary>
+    /// <param name="dock">The document dock.</param>
+    /// <param name="mode">Close button display mode.</param>
+    /// <returns>The same document dock.</returns>
+    public static IDocumentDock WithCloseButtonShowMode(this IDocumentDock dock, DocumentCloseButtonShowMode mode) { dock.CloseButtonShowMode = mode; return dock; }
+    /// <summary>
+    /// Sets placeholder content displayed when the document host has no visible dockables.
+    /// </summary>
+    /// <param name="dock">The document dock.</param>
+    /// <param name="content">Placeholder content.</param>
+    /// <returns>The same document dock.</returns>
+    public static IDocumentDock WithEmptyContent(this IDocumentDock dock, object? content) { dock.EmptyContent = content; return dock; }
     // Avoid shadowing instance methods; provide chainable variants with distinct names
     /// <summary>
     /// Appends a document to the document dock in a chainable way.
@@ -914,6 +1000,15 @@ public static class FluentExtensions
     /// <param name="template">Template instance.</param>
     /// <returns>The same instance.</returns>
     public static IDocumentDockContent WithDocumentTemplate(this IDocumentDockContent dock, IDocumentTemplate? template) { dock.DocumentTemplate = template; return dock; }
+
+    // IToolDockContent fluent setter
+    /// <summary>
+    /// Sets the tool template.
+    /// </summary>
+    /// <param name="dock">The tool dock content.</param>
+    /// <param name="template">Template instance.</param>
+    /// <returns>The same instance.</returns>
+    public static IToolDockContent WithToolTemplate(this IToolDockContent dock, IToolTemplate? template) { dock.ToolTemplate = template; return dock; }
 
     // IToolDock fluent setters and helpers
     /// <summary>
@@ -1002,6 +1097,13 @@ public static class FluentExtensions
     /// <returns>The same window.</returns>
     public static IDockWindow WithSize(this IDockWindow window, double width, double height) { window.Width = width; window.Height = height; return window; }
     /// <summary>
+    /// Sets the window state.
+    /// </summary>
+    /// <param name="window">The dock window.</param>
+    /// <param name="windowState">Window state value.</param>
+    /// <returns>The same window.</returns>
+    public static IDockWindow WithWindowState(this IDockWindow window, DockWindowState windowState) { window.WindowState = windowState; return window; }
+    /// <summary>
     /// Sets whether the window is topmost.
     /// </summary>
     /// <param name="window">The dock window.</param>
@@ -1015,6 +1117,34 @@ public static class FluentExtensions
     /// <param name="title">Title text.</param>
     /// <returns>The same window.</returns>
     public static IDockWindow WithTitle(this IDockWindow window, string title) { window.Title = title; return window; }
+    /// <summary>
+    /// Sets the owner resolution mode for the window.
+    /// </summary>
+    /// <param name="window">The dock window.</param>
+    /// <param name="ownerMode">Owner resolution mode.</param>
+    /// <returns>The same window.</returns>
+    public static IDockWindow WithOwnerMode(this IDockWindow window, DockWindowOwnerMode ownerMode) { window.OwnerMode = ownerMode; return window; }
+    /// <summary>
+    /// Sets the parent window for owner relationships.
+    /// </summary>
+    /// <param name="window">The dock window.</param>
+    /// <param name="parentWindow">Parent window.</param>
+    /// <returns>The same window.</returns>
+    public static IDockWindow WithParentWindow(this IDockWindow window, IDockWindow? parentWindow) { window.ParentWindow = parentWindow; return window; }
+    /// <summary>
+    /// Sets whether the window should be presented modally.
+    /// </summary>
+    /// <param name="window">The dock window.</param>
+    /// <param name="isModal">Modal flag.</param>
+    /// <returns>The same window.</returns>
+    public static IDockWindow WithModal(this IDockWindow window, bool isModal) { window.IsModal = isModal; return window; }
+    /// <summary>
+    /// Sets whether the window should appear in the taskbar.
+    /// </summary>
+    /// <param name="window">The dock window.</param>
+    /// <param name="showInTaskbar">Taskbar visibility.</param>
+    /// <returns>The same window.</returns>
+    public static IDockWindow WithShowInTaskbar(this IDockWindow window, bool? showInTaskbar) { window.ShowInTaskbar = showInTaskbar; return window; }
     /// <summary>
     /// Sets the owner dockable for the window.
     /// </summary>
@@ -1043,4 +1173,99 @@ public static class FluentExtensions
     /// <param name="host">Host adapter.</param>
     /// <returns>The same window.</returns>
     public static IDockWindow WithHost(this IDockWindow window, IHostWindow? host) { window.Host = host; return window; }
+
+    // ISplitViewDock creation helpers
+
+    /// <summary>
+    /// Creates a new <see cref="ISplitViewDock"/> and optionally configures it.
+    /// </summary>
+    /// <param name="factory">The factory used to create the dock.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>The created <see cref="ISplitViewDock"/>.</returns>
+    public static ISplitViewDock SplitViewDock(this IFactory factory, Action<ISplitViewDock>? configure = null)
+    {
+        var dock = factory.CreateSplitViewDock();
+        configure?.Invoke(dock);
+        return dock;
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="ISplitViewDock"/>, assigns it to <paramref name="dock"/>, and returns the same factory for chaining.
+    /// </summary>
+    /// <param name="factory">The factory used to create the dock.</param>
+    /// <param name="dock">Outputs the created <see cref="ISplitViewDock"/>.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>The same <see cref="IFactory"/> instance.</returns>
+    public static IFactory SplitViewDock(this IFactory factory, out ISplitViewDock dock, Action<ISplitViewDock>? configure = null)
+    {
+        dock = factory.CreateSplitViewDock();
+        configure?.Invoke(dock);
+        return factory;
+    }
+
+    // ISplitViewDock configuration helpers
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.CompactPaneLength"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="length">The compact pane length.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithCompactPaneLength(this ISplitViewDock dock, double length) { dock.CompactPaneLength = length; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.DisplayMode"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="mode">The display mode.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithDisplayMode(this ISplitViewDock dock, SplitViewDisplayMode mode) { dock.DisplayMode = mode; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.IsPaneOpen"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="isOpen">Whether the pane is open.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithIsPaneOpen(this ISplitViewDock dock, bool isOpen) { dock.IsPaneOpen = isOpen; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.OpenPaneLength"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="length">The open pane length.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithOpenPaneLength(this ISplitViewDock dock, double length) { dock.OpenPaneLength = length; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.PanePlacement"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="placement">The pane placement.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithPanePlacement(this ISplitViewDock dock, SplitViewPanePlacement placement) { dock.PanePlacement = placement; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.UseLightDismissOverlayMode"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="useLightDismiss">Whether to use light dismiss overlay mode.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithUseLightDismissOverlayMode(this ISplitViewDock dock, bool useLightDismiss) { dock.UseLightDismissOverlayMode = useLightDismiss; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.PaneDockable"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="paneDockable">The pane dockable.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithPaneDockable(this ISplitViewDock dock, IDockable? paneDockable) { dock.PaneDockable = paneDockable; return dock; }
+
+    /// <summary>
+    /// Sets the <see cref="ISplitViewDock.ContentDockable"/>.
+    /// </summary>
+    /// <param name="dock">The SplitViewDock to configure.</param>
+    /// <param name="contentDockable">The content dockable.</param>
+    /// <returns>The same dock for chaining.</returns>
+    public static ISplitViewDock WithContentDockable(this ISplitViewDock dock, IDockable? contentDockable) { dock.ContentDockable = contentDockable; return dock; }
 }

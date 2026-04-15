@@ -26,7 +26,7 @@
 
     <Setter Property="HeaderTemplate">
       <DataTemplate DataType="core:IDockable">
-        <TextBlock Text="{Binding Title}" Padding="2" />
+        <TextBlock Text="{Binding Title}" Padding="{DynamicResource DockHeaderContentPadding}" />
       </DataTemplate>
     </Setter>
 
@@ -34,7 +34,7 @@
       <DataTemplate DataType="core:IDockable">
         <TextBlock VerticalAlignment="Center"
                    Text="*"
-                   Margin="0,0,2,0" />
+                   Margin="{DynamicResource DockModifiedIndicatorMargin}" />
       </DataTemplate>
     </Setter>
 
@@ -46,20 +46,23 @@
           <ToolTabStrip x:Name="PART_TabStrip"
                         ItemsSource="{Binding VisibleDockables}"
                         SelectedItem="{Binding ActiveDockable, Mode=TwoWay}"
+                        IconTemplate="{TemplateBinding IconTemplate}"
+                        HeaderTemplate="{TemplateBinding HeaderTemplate}"
+                        ModifiedTemplate="{TemplateBinding ModifiedTemplate}"
                         DockPanel.Dock="Bottom"
                         DockProperties.IsDropArea="True"
                         DockProperties.DockAdornerHost="{Binding #PART_DockPanel}" />
           <Border x:Name="PART_Border">
             <DockableControl DataContext="{Binding ActiveDockable}"
                              TrackingMode="Visible">
-              <ContentControl x:Name="PART_ContentPresenter"
-                              Content="{Binding}"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch">
-                <ContentControl.ContentTemplate>
+              <DeferredContentControl x:Name="PART_ContentPresenter"
+                                      Content="{Binding}"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch">
+                <DeferredContentControl.ContentTemplate>
                   <ControlRecyclingDataTemplate Parent="{Binding #PART_ContentPresenter}" />
-                </ContentControl.ContentTemplate>
-              </ContentControl>
+                </DeferredContentControl.ContentTemplate>
+              </DeferredContentControl>
             </DockableControl>
           </Border>
         </DockPanel>
@@ -73,9 +76,9 @@
 
     <Style Selector="^/template/ Border#PART_Border">
       <Setter Property="ZIndex" Value="-1" />
-      <Setter Property="Background" Value="{DynamicResource DockThemeBackgroundBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DockSurfacePanelBrush}" />
       <Setter Property="Margin" Value="0" />
-      <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource DockBorderSubtleBrush}" />
       <Setter Property="BorderThickness" Value="1 0 1 0" />
     </Style>
 

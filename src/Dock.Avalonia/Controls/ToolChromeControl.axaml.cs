@@ -1,13 +1,15 @@
 // Copyright (c) Wiesław Šoltés. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
-using System.Runtime.InteropServices;
+using System;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
+using Dock.Avalonia.Automation.Peers;
 using Dock.Model.Core;
 using Dock.Avalonia.Internal;
 
@@ -24,6 +26,7 @@ public class ToolChromeControl : ContentControl
 {
     private HostWindow? _attachedWindow;
     private WindowDragHelper? _windowDragHelper;
+    private Button? _maximizeRestoreButton;
 
     /// <summary>
     /// Define <see cref="Title"/> property.
@@ -165,6 +168,12 @@ public class ToolChromeControl : ContentControl
         UpdatePseudoClasses();
     }
 
+    /// <inheritdoc />
+    protected override AutomationPeer OnCreateAutomationPeer()
+    {
+        return new ToolChromeControlAutomationPeer(this);
+    }
+
     /// <summary>
     /// Gets or sets chrome tool title.
     /// </summary>
@@ -198,6 +207,14 @@ public class ToolChromeControl : ContentControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        RemoveHandler(PointerPressedEvent, PressedHandler);
+
+        if (_maximizeRestoreButton is not null)
+        {
+            _maximizeRestoreButton.Click -= OnMaximizeRestoreButtonClicked;
+            _maximizeRestoreButton = null;
+        }
+
         DetachFromWindow();
     }
 
@@ -217,29 +234,67 @@ public class ToolChromeControl : ContentControl
     {
         base.OnApplyTemplate(e);
 
+        DetachFromWindow();
+        RemoveHandler(PointerPressedEvent, PressedHandler);
+
+        if (_maximizeRestoreButton is not null)
+        {
+            _maximizeRestoreButton.Click -= OnMaximizeRestoreButtonClicked;
+            _maximizeRestoreButton = null;
+        }
+
         Grip = e.NameScope.Find<Control>("PART_Grip");
         CloseButton = e.NameScope.Find<Button>("PART_CloseButton");
         AddHandler(PointerPressedEvent, PressedHandler, RoutingStrategies.Tunnel);
 
         AttachToWindow();
 
-        var maximizeRestoreButton = e.NameScope.Get<Button>("PART_MaximizeRestoreButton");
-        maximizeRestoreButton.Click += OnMaximizeRestoreButtonClicked;
+        _maximizeRestoreButton = e.NameScope.Find<Button>("PART_MaximizeRestoreButton");
+        if (_maximizeRestoreButton is not null)
+        {
+            _maximizeRestoreButton.Click += OnMaximizeRestoreButtonClicked;
+        }
     }
 
-    private WindowDragHelper CreateDragHelper(Control grip)
+    private static bool IsFocusableChild(Control owner, Control source)
+    {
+        var current = source;
+        while (current != null && current != owner)
+        {
+            if (current.Focusable)
+            {
+                return true;
+            }
+
+            current = current.Parent as Control;
+        }
+
+        return false;
+    }
+
+    private WindowDragHelper CreateDragHelper(
+        Control owner,
+        bool ignoreFocusable = false,
+        bool handlePointerPressed = true,
+        Func<bool>? isEnabled = null)
     {
         return new WindowDragHelper(
-            grip,
-            () => true,
+            owner,
+            isEnabled ?? (() => true),
             source =>
             {
                 if (source is null)
                     return false;
 
+                if (ignoreFocusable && IsFocusableChild(owner, source))
+                {
+                    return false;
+                }
+
                 return !(source is Button) &&
-                       !WindowDragHelper.IsChildOfType<Button>(grip, source);
-            });
+                       !WindowDragHelper.IsChildOfType<Button>(owner, source);
+            },
+            handlePointerPressed);
     }
 
     private void AttachToWindow()
@@ -249,24 +304,19 @@ public class ToolChromeControl : ContentControl
             return;
         }
 
-        // On linux we dont attach to the HostWindow because of inconsistent drag behaviour
-        if (VisualRoot is Window window)
+        if (TopLevel.GetTopLevel(this) is Window window)
         {
             if (window is HostWindow hostWindow)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    hostWindow.AttachGrip(this);
-                    _attachedWindow = hostWindow;
+                hostWindow.AttachGrip(this);
+                _attachedWindow = hostWindow;
+                SetCurrentValue(IsFloatingProperty, true);
 
-                    SetCurrentValue(IsFloatingProperty, true);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    _windowDragHelper = CreateDragHelper(hostWindow);
-                    _windowDragHelper.Attach();
-                }
+                _windowDragHelper = CreateDragHelper(
+                    Grip,
+                    ignoreFocusable: true,
+                    isEnabled: () => hostWindow.ToolChromeControlsWholeWindow);
+                _windowDragHelper.Attach();
             }
 #if false
             else
@@ -295,7 +345,7 @@ public class ToolChromeControl : ContentControl
 
     private void OnMaximizeRestoreButtonClicked(object? sender, RoutedEventArgs e)
     {
-        if (VisualRoot is HostWindow window)
+        if (TopLevel.GetTopLevel(this) is HostWindow window)
         {
             if (window.WindowState == WindowState.Maximized)
                 window.WindowState = WindowState.Normal;

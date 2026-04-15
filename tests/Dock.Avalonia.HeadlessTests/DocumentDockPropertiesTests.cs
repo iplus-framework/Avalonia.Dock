@@ -23,6 +23,20 @@ public class DocumentDockPropertiesTests
     }
 
     [AvaloniaFact]
+    public void DocumentDock_Default_LayoutMode_Tabbed()
+    {
+        var dock = new DocumentDock();
+        Assert.Equal(DocumentLayoutMode.Tabbed, dock.LayoutMode);
+    }
+
+    [AvaloniaFact]
+    public void DocumentDock_Default_EmptyContent_Value()
+    {
+        var dock = new DocumentDock();
+        Assert.Equal("No documents open", dock.EmptyContent);
+    }
+
+    [AvaloniaFact]
     public void SetDocumentDockTabsLayoutLeft_Changes_TabsLayout()
     {
         var factory = new Factory();
@@ -51,5 +65,15 @@ public class DocumentDockPropertiesTests
         factory.SetDocumentDockTabsLayoutTop(dock);
 
         Assert.Equal(DocumentTabLayout.Top, dock.TabsLayout);
+    }
+
+    [AvaloniaFact]
+    public void SetDocumentDockLayoutModeMdi_Changes_LayoutMode()
+    {
+        var factory = new Factory();
+        var dock = new DocumentDock { Factory = factory };
+        factory.SetDocumentDockLayoutModeMdi(dock);
+
+        Assert.Equal(DocumentLayoutMode.Mdi, dock.LayoutMode);
     }
 }

@@ -21,7 +21,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanFloat" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanFloatMultiConverter}">
+            <Binding />
+            <Binding Path="CanFloat" />
+            <Binding Path="DockCapabilityOverrides.CanFloat" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanFloat" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -34,7 +39,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanFloat" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanFloatMultiConverter}">
+            <Binding />
+            <Binding Path="CanFloat" />
+            <Binding Path="DockCapabilityOverrides.CanFloat" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanFloat" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -45,7 +55,12 @@
     <Separator>
       <Separator.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanFloat" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanFloatMultiConverter}">
+            <Binding />
+            <Binding Path="CanFloat" />
+            <Binding Path="DockCapabilityOverrides.CanFloat" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanFloat" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -58,7 +73,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -71,7 +91,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -84,7 +109,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -97,7 +127,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -113,7 +148,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -129,7 +169,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -145,7 +190,12 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -159,7 +209,12 @@
     <Separator>
       <Separator.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanClose" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding />
+            <Binding Path="CanClose" />
+            <Binding Path="DockCapabilityOverrides.CanClose" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
           <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
             <Binding Path="((core:IDock)Owner).CanCloseLastDockable" FallbackValue="{x:True}" />
             <Binding Path="((core:IDock)Owner).VisibleDockables.Count" FallbackValue="0" />
@@ -172,8 +227,18 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanDrag" />
-          <Binding Path="CanDrop" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDragMultiConverter}">
+            <Binding />
+            <Binding Path="CanDrag" />
+            <Binding Path="DockCapabilityOverrides.CanDrag" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrag" />
+          </MultiBinding>
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDropMultiConverter}">
+            <Binding />
+            <Binding Path="CanDrop" />
+            <Binding Path="DockCapabilityOverrides.CanDrop" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrop" />
+          </MultiBinding>
         </MultiBinding>
       </MenuItem.IsVisible>
     </MenuItem>
@@ -182,8 +247,18 @@
               CommandParameter="{Binding}">
       <MenuItem.IsVisible>
         <MultiBinding Converter="{x:Static BoolConverters.And}">
-          <Binding Path="CanDrag" />
-          <Binding Path="CanDrop" />
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDragMultiConverter}">
+            <Binding />
+            <Binding Path="CanDrag" />
+            <Binding Path="DockCapabilityOverrides.CanDrag" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrag" />
+          </MultiBinding>
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDropMultiConverter}">
+            <Binding />
+            <Binding Path="CanDrop" />
+            <Binding Path="DockCapabilityOverrides.CanDrop" />
+            <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrop" />
+          </MultiBinding>
         </MultiBinding>
       </MenuItem.IsVisible>
     </MenuItem>
@@ -199,6 +274,14 @@
                 Command="{Binding Owner.Factory.SetDocumentDockTabsLayoutRight}"
                 CommandParameter="{Binding Owner}" />
     </MenuItem>
+    <MenuItem Header="{DynamicResource DocumentTabStripItemLayoutModeString}">
+      <MenuItem Header="{DynamicResource DocumentTabStripItemLayoutModeTabbedString}"
+                Command="{Binding Owner.Factory.SetDocumentDockLayoutModeTabbed}"
+                CommandParameter="{Binding Owner}" />
+      <MenuItem Header="{DynamicResource DocumentTabStripItemLayoutModeMdiString}"
+                Command="{Binding Owner.Factory.SetDocumentDockLayoutModeMdi}"
+                CommandParameter="{Binding Owner}" />
+    </MenuItem>
   </ContextMenu>
   
   <ControlTheme x:Key="{x:Type DocumentTabStripItem}" TargetType="DocumentTabStripItem">
@@ -206,80 +289,168 @@
     <Setter Property="(AutomationProperties.AutomationId)" Value="{Binding Id}" />
     <Setter Property="(AutomationProperties.Name)" Value="{Binding Title}" />
 
-    <Setter Property="(DockProperties.IsDragEnabled)" Value="{Binding CanDrag}" />
-    <Setter Property="(DockProperties.IsDropEnabled)" Value="{Binding CanDrop}" />
+    <Setter Property="(DockProperties.IsDragEnabled)">
+      <Setter.Value>
+        <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDragMultiConverter}">
+          <Binding />
+          <Binding Path="CanDrag" />
+          <Binding Path="DockCapabilityOverrides.CanDrag" />
+          <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrag" />
+        </MultiBinding>
+      </Setter.Value>
+    </Setter>
+    <Setter Property="(DockProperties.IsDropEnabled)">
+      <Setter.Value>
+        <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanDropMultiConverter}">
+          <Binding />
+          <Binding Path="CanDrop" />
+          <Binding Path="DockCapabilityOverrides.CanDrop" />
+          <Binding Path="((core:IDock)Owner).DockCapabilityPolicy.CanDrop" />
+        </MultiBinding>
+      </Setter.Value>
+    </Setter>
     <Setter Property="(DockProperties.DockGroup)" Value="{Binding DockGroup}" />
 
     <Setter Property="(TextElement.FontSize)" Value="{DynamicResource DockFontSizeNormal}" />
     <Setter Property="FontWeight" Value="Normal" />
-    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="MinHeight" Value="{DynamicResource DockDocumentTabItemMinHeight}" />
+    <Setter Property="MinWidth" Value="{DynamicResource DockDocumentTabItemMinWidth}" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource DockThemeForegroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DockTabForegroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockBorderSubtleBrush}" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Margin" Value="0" />
-    <Setter Property="Padding" Value="4,0,4,0" />
+    <Setter Property="Margin" Value="{DynamicResource DockDocumentTabItemMargin}" />
+    <Setter Property="Padding" Value="{DynamicResource DockDocumentTabItemPadding}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource DockDocumentTabItemCornerRadius}" />
     <Setter Property="DocumentContextMenu" Value="{DynamicResource DocumentTabStripItemContextMenu}" />
 
     <Setter Property="Template">
       <ControlTemplate>
-        <Panel>
-          <Border Background="{TemplateBinding Background}"
-                  TextElement.FontFamily="{TemplateBinding FontFamily}"
-                  TextElement.FontSize="{TemplateBinding FontSize}"
-                  TextElement.FontWeight="{TemplateBinding FontWeight}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  ContextMenu="{TemplateBinding DocumentContextMenu}"
-                  Padding="{TemplateBinding Padding}"
-                  DockProperties.IsDragArea="True"
-                  DockProperties.IsDropArea="True"
-                  DockProperties.IsDockTarget="True"
-                  DockProperties.ShowDockIndicatorOnly="True"
-                  DockProperties.IndicatorDockOperation="Fill">
-            <DockableControl TrackingMode="Tab">
-              <DockPanel Background="Transparent">
-                <StackPanel Background="Transparent"
-                            Orientation="Horizontal"
-                            Spacing="2">
-                  <StackPanel Margin="2" Orientation="Horizontal">
-                    <ContentPresenter ContentTemplate="{Binding $parent[DocumentControl].IconTemplate}"
+        <Panel Background="{DynamicResource DockDocumentTabStripMaskBrush}">
+          <Border x:Name="PART_TabGutter"
+                  Background="Transparent">
+            <Border x:Name="PART_TabBody"
+                    Background="{TemplateBinding Background}"
+                    TextElement.FontFamily="{TemplateBinding FontFamily}"
+                    TextElement.FontSize="{TemplateBinding FontSize}"
+                    TextElement.FontWeight="{TemplateBinding FontWeight}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    ContextMenu="{TemplateBinding DocumentContextMenu}"
+                    Padding="{TemplateBinding Padding}"
+                    CornerRadius="{TemplateBinding CornerRadius}"
+                    DockProperties.IsDragArea="True"
+                    DockProperties.IsDropArea="True"
+                    DockProperties.IsDockTarget="True"
+                    DockProperties.ShowDockIndicatorOnly="True"
+                    DockProperties.IndicatorDockOperation="Fill">
+              <DockableControl TrackingMode="Tab"
+                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                <DockPanel Background="Transparent">
+                  <Grid Background="Transparent"
+                        ColumnDefinitions="*,Auto"
+                        ColumnSpacing="{DynamicResource DockTabContentSpacing}">
+                    <StackPanel Grid.Column="0"
+                                x:Name="PART_HeaderHost"
+                                Margin="{DynamicResource DockTabContentMargin}"
+                                Orientation="Horizontal"
+                                Spacing="{DynamicResource DockDocumentTabHeaderContentSpacing}"
+                                ClipToBounds="True">
+                      <Grid x:Name="PART_IconCloseHost"
+                            ClipToBounds="False">
+                        <ContentPresenter x:Name="PART_IconPresenter"
+                                          ContentTemplate="{Binding $parent[DocumentTabStrip].IconTemplate}"
+                                          Content="{Binding}" />
+                        <ContentPresenter x:Name="PART_CompactClosePresenter"
+                                          IsVisible="False"
+                                          ContentTemplate="{Binding $parent[DocumentTabStrip].CloseTemplate}"
+                                          Content="{Binding}" />
+                      </Grid>
+                      <ContentPresenter x:Name="PART_HeaderPresenter"
+                                        ContentTemplate="{Binding $parent[DocumentTabStrip].HeaderTemplate}"
+                                        Content="{Binding}" />
+                      <ContentPresenter x:Name="PART_ModifiedPresenter"
+                                        ContentTemplate="{Binding $parent[DocumentTabStrip].ModifiedTemplate}"
+                                        IsVisible="{Binding IsModified}"
+                                        Content="{Binding}" />
+                    </StackPanel>
+                    <ContentPresenter x:Name="PART_ClosePresenter"
+                                      Grid.Column="1"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Margin="{DynamicResource DockTabContentMargin}"
+                                      ContentTemplate="{Binding $parent[DocumentTabStrip].CloseTemplate}"
                                       Content="{Binding}" />
-                    <ContentPresenter ContentTemplate="{Binding $parent[DocumentControl].HeaderTemplate}"
-                                      Content="{Binding}" />
-                  </StackPanel>
-                  <ContentPresenter ContentTemplate="{Binding $parent[DocumentControl].ModifiedTemplate}"
-                                    IsVisible="{Binding IsModified}"
-                                    Content="{Binding}" />
-                  <ContentPresenter ContentTemplate="{Binding $parent[DocumentControl].CloseTemplate}"
-                                    Content="{Binding}" />
-                </StackPanel>
-              </DockPanel>
-            </DockableControl>
+                  </Grid>
+                </DockPanel>
+              </DockableControl>
+            </Border>
           </Border>
+          <Border x:Name="PART_TabSeparatorRight"
+                  IsHitTestVisible="False"
+                  UseLayoutRounding="True"
+                  Width="1"
+                  Margin="0,7,0,7"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Stretch" />
         </Panel>
       </ControlTemplate>
     </Setter>
 
     <Style Selector="^:not(:active):selected">
-      <Setter Property="Background" Value="{DynamicResource DockThemeBorderLowBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource DockThemeForegroundBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DockSurfaceHeaderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockDocumentTabSelectedForegroundBrush}" />
     </Style>
 
     <Style Selector="^:active:selected">
-      <Setter Property="Background" Value="{DynamicResource DockApplicationAccentBrushLow}" />
-      <Setter Property="Foreground" Value="{DynamicResource DockApplicationAccentForegroundBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DockTabActiveBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockTabActiveForegroundBrush}" />
     </Style>
 
-    <Style Selector="^:pointerover">
-      <Setter Property="Background" Value="{DynamicResource DockApplicationAccentBrushMed}" />
-      <Setter Property="Foreground" Value="{DynamicResource DockApplicationAccentForegroundBrush}" />
+    <Style Selector="^:dragging:not(:selected)">
+      <Setter Property="Background" Value="{DynamicResource DockTabHoverBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockDocumentTabPointerOverForegroundBrush}" />
     </Style>
 
-    <Style Selector="^:selected:pointerover">
-      <Setter Property="Background" Value="{DynamicResource DockApplicationAccentBrushLow}" />
-      <Setter Property="Foreground" Value="{DynamicResource DockApplicationAccentForegroundBrush}" />
+    <Style Selector="^:dragging:selected:not(:active)">
+      <Setter Property="Background" Value="{DynamicResource DockSurfaceHeaderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockDocumentTabSelectedForegroundBrush}" />
+    </Style>
+
+    <Style Selector="^:dragging:active:selected">
+      <Setter Property="Background" Value="{DynamicResource DockTabActiveBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockTabActiveForegroundBrush}" />
+    </Style>
+
+    <Style Selector="^:pointerover:not(:selected):not(:dragging)">
+      <Setter Property="Background" Value="{DynamicResource DockTabHoverBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource DockDocumentTabPointerOverForegroundBrush}" />
+    </Style>
+
+    <Style Selector="^:selected:pointerover:not(:dragging)">
+      <Setter Property="Foreground" Value="{DynamicResource DockDocumentTabPointerOverForegroundBrush}" />
+    </Style>
+
+    <Style Selector="^/template/ Border#PART_TabSeparatorRight">
+      <Setter Property="Background" Value="{DynamicResource DockSeparatorBrush}" />
+      <Setter Property="Opacity" Value="{DynamicResource DockDocumentTabItemSeparatorOpacity}" />
+    </Style>
+
+    <Style Selector="^:ultracompact /template/ ContentPresenter#PART_ClosePresenter">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="^:ultracompact /template/ ContentPresenter#PART_CompactClosePresenter">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="^:ultracompact:pointerover /template/ ContentPresenter#PART_CompactClosePresenter">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="^:ultracompact:pointerover /template/ ContentPresenter#PART_IconPresenter">
+      <Setter Property="IsVisible" Value="False" />
     </Style>
 
   </ControlTheme>

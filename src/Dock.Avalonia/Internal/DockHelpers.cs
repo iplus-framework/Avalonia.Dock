@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Dock.Avalonia.Contract;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -20,10 +21,55 @@ namespace Dock.Avalonia.Internal;
 /// </summary>
 internal static class DockHelpers
 {
+    public static DockFloatingWindowHostMode ResolveFloatingWindowHostMode(Visual? visual)
+    {
+        if (visual is null)
+        {
+            return DockSettings.ResolveFloatingWindowHostMode();
+        }
+
+        var dockControl = visual as DockControl ?? visual.FindAncestorOfType<DockControl>();
+        var root = dockControl?.Layout as IRootDock;
+        return DockSettings.ResolveFloatingWindowHostMode(root);
+    }
+
+    public static DockFloatingWindowHostMode ResolveFloatingWindowHostMode(IDockable? dockable)
+    {
+        if (dockable is IRootDock rootDock)
+        {
+            return DockSettings.ResolveFloatingWindowHostMode(rootDock);
+        }
+
+        if (dockable is { Owner: not null, Owner: IRootDock ownerRoot })
+        {
+            return DockSettings.ResolveFloatingWindowHostMode(ownerRoot);
+        }
+
+        if (dockable?.Owner is { Factory: { } factory })
+        {
+            var root = factory.FindRoot(dockable, _ => true);
+            return DockSettings.ResolveFloatingWindowHostMode(root);
+        }
+
+        return DockSettings.ResolveFloatingWindowHostMode();
+    }
+
+    public static bool IsManagedWindowHostingEnabled(Visual? visual)
+    {
+        return ResolveFloatingWindowHostMode(visual) == DockFloatingWindowHostMode.Managed;
+    }
+
+    public static bool IsManagedWindowHostingEnabled(IDockable? dockable)
+    {
+        return ResolveFloatingWindowHostMode(dockable) == DockFloatingWindowHostMode.Managed;
+    }
+
     public static Point GetScreenPoint(Visual visual, Point point)
     {
-        // var scaling = (visual.GetVisualRoot() as TopLevel)?.RenderScaling ?? 1.0;
-        var scaling = (visual.GetVisualRoot() as TopLevel)?.Screens?.ScreenFromVisual(visual)?.Scaling ?? 1.0;
+        var topLevel = TopLevel.GetTopLevel(visual);
+        var scaling = topLevel?.Screens?.ScreenFromVisual(visual)?.Scaling
+                      ?? topLevel?.RenderScaling
+                      ?? 1.0;
         var screenPoint = visual.PointToScreen(point).ToPoint(scaling);
         return screenPoint;
     }
@@ -74,6 +120,25 @@ internal static class DockHelpers
             var value = control.GetValue(DockProperties.IsDropAreaProperty);
             LogDropSearch($"  DropArea {control.GetType().Name}: Value={value}, Bounds={control.Bounds}, IsVisible={control.IsVisible}, IsHitTestVisible={control.IsHitTestVisible}, IsEffectivelyEnabled={control.IsEffectivelyEnabled}");
         }
+    }
+
+    public static DockControl? ResolveDockControl(Control control)
+    {
+        if (control.FindAncestorOfType<DockControl>() is { } dockControl)
+        {
+            return dockControl;
+        }
+
+        for (var current = (Visual?)control; current is not null; current = current.GetVisualParent())
+        {
+            if (current is IExternalDockSurface externalDockSurface
+                && externalDockSurface.DockControl is { } ownerDockControl)
+            {
+                return ownerDockControl;
+            }
+        }
+
+        return null;
     }
 
     public static Control? GetControl(Visual? input, Point point, StyledProperty<bool> property)
@@ -139,6 +204,85 @@ internal static class DockHelpers
         return null;
     }
 
+    public static Control? GetControlIncludingExternal(DockControl dockControl, Point point, StyledProperty<bool> property)
+    {
+        var localHit = GetControl(dockControl, point, property);
+        if (localHit is not null)
+        {
+            return localHit;
+        }
+
+        return GetExternalControl(dockControl, point, property);
+    }
+
+    public static Control? GetExternalControl(DockControl dockControl, Point point, StyledProperty<bool> property)
+    {
+        if (dockControl.GetVisualRoot() is not Visual visualRoot)
+        {
+            return null;
+        }
+
+        var screenPoint = dockControl.PointToScreen(point);
+
+        foreach (var externalRoot in dockControl.EnumerateExternalDockSurfaceControls())
+        {
+            if (externalRoot.GetVisualRoot() is not { } externalRootVisual
+                || !ReferenceEquals(externalRootVisual, visualRoot))
+            {
+                continue;
+            }
+
+            if (!ReferenceEquals(ResolveDockControl(externalRoot), dockControl))
+            {
+                continue;
+            }
+
+            var externalPoint = externalRoot.PointToClient(screenPoint);
+            var externalHit = GetControl(externalRoot, externalPoint, property);
+            if (externalHit is null)
+            {
+                var bounds = new Rect(externalRoot.Bounds.Size);
+                if (bounds.Contains(externalPoint)
+                    && externalRoot.GetValue(property))
+                {
+                    externalHit = externalRoot;
+                }
+            }
+            if (externalHit is null)
+            {
+                continue;
+            }
+
+            // When searching drop areas, prefer a dock-target hit at the same point so
+            // adorner rendering can activate on external tab strips (tab items/fill target).
+            if (property == DockProperties.IsDropAreaProperty
+                && !externalHit.GetValue(DockProperties.IsDockTargetProperty))
+            {
+                var dockTargetHit = GetControl(externalRoot, externalPoint, DockProperties.IsDockTargetProperty);
+                if (dockTargetHit is null)
+                {
+                    var bounds = new Rect(externalRoot.Bounds.Size);
+                    if (bounds.Contains(externalPoint)
+                        && externalRoot.GetValue(DockProperties.IsDockTargetProperty))
+                    {
+                        dockTargetHit = externalRoot;
+                    }
+                }
+                if (dockTargetHit is { } && dockTargetHit.GetValue(DockProperties.IsDropAreaProperty))
+                {
+                    externalHit = dockTargetHit;
+                }
+            }
+
+            if (ReferenceEquals(ResolveDockControl(externalHit), dockControl))
+            {
+                return externalHit;
+            }
+        }
+
+        return null;
+    }
+
     private static void Print(Exception ex)
     {
         // Exception logging should always emit to help diagnose hit-test/runtime failures
@@ -197,11 +341,21 @@ internal static class DockHelpers
         return -1;
     }
 
+    private static int GetManagedWindowZOrder(DockControl dockControl)
+    {
+        if (dockControl.FindAncestorOfType<MdiDocumentWindow>() is { DataContext: IMdiDocument document })
+        {
+            return document.MdiZIndex;
+        }
+
+        return int.MinValue;
+    }
+
     public static IEnumerable<DockControl> GetZOrderedDockControls(IList<IDockControl> dockControls)
     {
         var windows = dockControls
             .OfType<DockControl>()
-            .Select(dock => dock.GetVisualRoot() as Window)
+            .Select(dock => TopLevel.GetTopLevel(dock) as Window)
             .OfType<Window>()
             .Distinct()
             .ToArray();
@@ -210,8 +364,9 @@ internal static class DockHelpers
 
         return dockControls
             .OfType<DockControl>()
-            .Select(dock => (dock, order: IndexOf(windows, dock.GetVisualRoot() as Window)))
-            .OrderByDescending(x => x.order)
+            .Select(dock => (dock, windowOrder: IndexOf(windows, TopLevel.GetTopLevel(dock) as Window), managedOrder: GetManagedWindowZOrder(dock)))
+            .OrderByDescending(x => x.windowOrder)
+            .ThenByDescending(x => x.managedOrder)
             .Select(pair => pair.dock);
     }
 }

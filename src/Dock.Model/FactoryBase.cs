@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 
@@ -12,6 +13,191 @@ namespace Dock.Model;
 /// </summary>
 public abstract partial class FactoryBase : IFactory
 {
+    private readonly ConditionalWeakTable<IDockable, IDockable> _itemsSourceOwners = new();
+    private readonly ConditionalWeakTable<IDockable, ItemsSourceItemReference> _itemsSourceItems = new();
+    private readonly Dictionary<object, List<IDockable>> _itemsSourceDockablesByItem = new();
+
+    private sealed class ItemsSourceItemReference
+    {
+        public ItemsSourceItemReference(object item)
+        {
+            Item = item;
+        }
+
+        public object Item { get; }
+    }
+
+    /// <summary>
+    /// Tracks dockables that were generated from an ItemsSource dock.
+    /// </summary>
+    /// <param name="dockable">The generated dockable.</param>
+    /// <param name="owner">The owning ItemsSource dock.</param>
+    public virtual void TrackItemsSourceDockable(IDockable dockable, IDockable owner)
+    {
+        TrackItemsSourceDockable(dockable, owner, dockable.Context);
+    }
+
+    /// <summary>
+    /// Tracks dockables that were generated from an ItemsSource dock.
+    /// </summary>
+    /// <param name="dockable">The generated dockable.</param>
+    /// <param name="owner">The owning ItemsSource dock.</param>
+    /// <param name="item">The source item associated with the generated dockable.</param>
+    public virtual void TrackItemsSourceDockable(IDockable dockable, IDockable owner, object? item)
+    {
+        _itemsSourceOwners.Remove(dockable);
+        _itemsSourceOwners.Add(dockable, owner);
+
+        RemoveTrackedItemsSourceItem(dockable);
+        if (item is not null)
+        {
+            TrackItemsSourceItem(dockable, item);
+        }
+    }
+
+    /// <summary>
+    /// Removes an ItemsSource-generated dockable mapping.
+    /// </summary>
+    /// <param name="dockable">The generated dockable.</param>
+    public virtual void UntrackItemsSourceDockable(IDockable dockable)
+    {
+        _itemsSourceOwners.Remove(dockable);
+        RemoveTrackedItemsSourceItem(dockable);
+    }
+
+    /// <summary>
+    /// Gets the tracked ItemsSource owner for a generated dockable.
+    /// </summary>
+    /// <param name="dockable">The generated dockable.</param>
+    /// <returns>The tracked owner if available; otherwise null.</returns>
+    protected virtual IDockable? GetTrackedItemsSourceOwner(IDockable dockable)
+    {
+        return _itemsSourceOwners.TryGetValue(dockable, out var owner) ? owner : null;
+    }
+
+    /// <inheritdoc />
+    public virtual IDockable? GetContainerFromItem(object item)
+    {
+        if (item is null)
+        {
+            return null;
+        }
+
+        if (_itemsSourceDockablesByItem.TryGetValue(item, out var dockables))
+        {
+            for (var index = 0; index < dockables.Count;)
+            {
+                var dockable = dockables[index];
+                if (_itemsSourceOwners.TryGetValue(dockable, out _))
+                {
+                    return dockable;
+                }
+
+                dockables.RemoveAt(index);
+            }
+
+            if (dockables.Count == 0)
+            {
+                _itemsSourceDockablesByItem.Remove(item);
+            }
+        }
+
+        return null;
+    }
+
+    private void TrackItemsSourceItem(IDockable dockable, object item)
+    {
+        _itemsSourceItems.Add(dockable, new ItemsSourceItemReference(item));
+
+        if (!_itemsSourceDockablesByItem.TryGetValue(item, out var dockables))
+        {
+            dockables = new List<IDockable>();
+            _itemsSourceDockablesByItem.Add(item, dockables);
+        }
+
+        dockables.Add(dockable);
+    }
+
+    private void RemoveTrackedItemsSourceItem(IDockable dockable)
+    {
+        if (!_itemsSourceItems.TryGetValue(dockable, out var itemReference))
+        {
+            return;
+        }
+
+        _itemsSourceItems.Remove(dockable);
+
+        if (_itemsSourceDockablesByItem.TryGetValue(itemReference.Item, out var dockables))
+        {
+            for (var index = dockables.Count - 1; index >= 0; index--)
+            {
+                if (ReferenceEquals(dockables[index], dockable))
+                {
+                    dockables.RemoveAt(index);
+                }
+            }
+
+            if (dockables.Count == 0)
+            {
+                _itemsSourceDockablesByItem.Remove(itemReference.Item);
+            }
+        }
+    }
+
+    private static bool IsAssignedProportion(double proportion)
+    {
+        return !double.IsNaN(proportion) && proportion > 0.0;
+    }
+
+    private static double ResolveEffectiveProportion(IProportionalDock ownerDock, IDock dock)
+    {
+        if (IsAssignedProportion(dock.Proportion))
+        {
+            return dock.Proportion;
+        }
+
+        if (ownerDock.VisibleDockables is not { Count: > 0 } visibleDockables)
+        {
+            return double.NaN;
+        }
+
+        var assignedTotal = 0.0;
+        var unassignedCount = 0;
+        var nonSplitterCount = 0;
+
+        foreach (var dockable in visibleDockables)
+        {
+            if (dockable is IProportionalDockSplitter)
+            {
+                continue;
+            }
+
+            nonSplitterCount++;
+
+            if (IsAssignedProportion(dockable.Proportion))
+            {
+                assignedTotal += dockable.Proportion;
+            }
+            else
+            {
+                unassignedCount++;
+            }
+        }
+
+        if (unassignedCount <= 0)
+        {
+            return double.NaN;
+        }
+
+        var remaining = 1.0 - assignedTotal;
+        if (remaining > 0.0)
+        {
+            return remaining / unassignedCount;
+        }
+
+        return nonSplitterCount > 0 ? 1.0 / nonSplitterCount : double.NaN;
+    }
+
     private static void CopyDockGroup(IDockable source, IDockable target)
     {
         var group = DockGroupValidator.GetEffectiveDockGroup(source);
@@ -41,6 +227,8 @@ public abstract partial class FactoryBase : IFactory
     {
         if (dock.VisibleDockables == null || dock.Owner is not IDock owner || dock.Owner is IRootDock)
             return;
+        if (!dock.IsCollapsable)
+            return;
 
         // Check if this dock has only one visible dockable
         if (dock.VisibleDockables.Count == 1)
@@ -57,6 +245,7 @@ public abstract partial class FactoryBase : IFactory
                     if (singleDockable is IDock singleDock && !double.IsNaN(dock.Proportion))
                     {
                         singleDock.Proportion = dock.Proportion;
+                        singleDock.CollapsedProportion = dock.Proportion;
                     }
 
                     // Remove the current dock from owner
@@ -87,8 +276,16 @@ public abstract partial class FactoryBase : IFactory
         // Preconditions: must be collapsable and currently empty.
         if (dock is null) return;
         if (!dock.IsCollapsable) return;
-        if (dock.VisibleDockables is null) return; // nothing to evaluate
-        if (dock.VisibleDockables.Count != 0) return; // only collapse when empty
+        if (dock is ISplitViewDock splitViewDock)
+        {
+            if (dock.VisibleDockables is not null && dock.VisibleDockables.Count != 0) return;
+            if (!IsSplitViewDockContentEmpty(splitViewDock)) return;
+        }
+        else
+        {
+            if (dock.VisibleDockables is null) return; // nothing to evaluate
+            if (dock.VisibleDockables.Count != 0) return; // only collapse when empty
+        }
 
         // Prevent collapsing pinned tool docks.
         var rootDock = FindRoot(dock, _ => true);
@@ -198,6 +395,10 @@ public abstract partial class FactoryBase : IFactory
         if (dockable is IDock dockableDock)
         {
             split = dockableDock;
+            // When reusing an existing dock for a new split layout, discard its previous
+            // proportion from the old owner so the new sibling split starts balanced.
+            split.Proportion = double.NaN;
+            split.CollapsedProportion = double.NaN;
         }
         else
         {
@@ -215,12 +416,14 @@ public abstract partial class FactoryBase : IFactory
 
         var containerProportion = dock.Proportion;
         dock.Proportion = double.NaN;
+        dock.CollapsedProportion = double.NaN;
 
         var layout = CreateProportionalDock();
         layout.Title = nameof(IProportionalDock);
         layout.VisibleDockables = CreateList<IDockable>();
         layout.Proportion = containerProportion;
-    CopyDockGroup(dock, layout);
+        layout.CollapsedProportion = containerProportion;
+        CopyDockGroup(dock, layout);
 
         var splitter = CreateProportionalDockSplitter();
         splitter.Title = nameof(IProportionalDockSplitter);
@@ -353,11 +556,14 @@ public abstract partial class FactoryBase : IFactory
                                 var splitter = CreateProportionalDockSplitter();
                                 splitter.Title = nameof(IProportionalDockSplitter);
 
-                                // Store the original dock's proportion and split it equally
-                                var originalProportion = dock.Proportion;
+                                // Split the dock's effective share equally. When the dock's proportion
+                                // is unset (NaN), infer it from sibling shares inside this owner.
+                                var originalProportion = ResolveEffectiveProportion(proportionalOwner, dock);
                                 var halfProportion = double.IsNaN(originalProportion) ? double.NaN : originalProportion / 2.0;
                                 dock.Proportion = halfProportion;
+                                dock.CollapsedProportion = halfProportion;
                                 split.Proportion = halfProportion;
+                                split.CollapsedProportion = halfProportion;
 
                                 switch (operation)
                                 {
@@ -396,12 +602,17 @@ public abstract partial class FactoryBase : IFactory
 
                         // Fallback to the original behavior when optimization is not applicable
                         var layout = CreateSplitLayout(dock, dockable, operation);
+                        var wasDefaultDockable = ownerDock.DefaultDockable == dock;
                         RemoveVisibleDockableAt(ownerDock, index);
                         OnDockableRemoved(dockable);
                         OnDockableUndocked(dockable, operation);
                         InsertVisibleDockable(ownerDock, index, layout);
                         OnDockableAdded(dockable);
                         ownerDock.ActiveDockable = layout;
+                        if (wasDefaultDockable)
+                        {
+                            ownerDock.DefaultDockable = layout;
+                        }
                         InitDockable(layout, ownerDock);
                         OnDockableDocked(dockable, operation);
                     }
@@ -428,6 +639,29 @@ public abstract partial class FactoryBase : IFactory
                 if (target is IDock dock)
                 {
                     dock.VisibleDockables = CreateList<IDockable>();
+                    if (dockable.Owner is IToolDock sourceToolDock && target is IToolDock targetToolDock)
+                    {
+                        targetToolDock.Id = sourceToolDock.Id;
+                        targetToolDock.Alignment = sourceToolDock.Alignment;
+                        targetToolDock.IsExpanded = sourceToolDock.IsExpanded;
+                        targetToolDock.AutoHide = sourceToolDock.AutoHide;
+                        targetToolDock.GripMode = sourceToolDock.GripMode;
+
+                        if (sourceToolDock is IToolDockContent sourceToolContent
+                            && targetToolDock is IToolDockContent targetToolContent)
+                        {
+                            targetToolContent.ToolTemplate = sourceToolContent.ToolTemplate;
+                        }
+
+                        if (sourceToolDock is IToolItemsSourceDock sourceToolItemsDock
+                            && targetToolDock is IToolItemsSourceDock targetToolItemsDock)
+                        {
+                            targetToolItemsDock.ToolItemContainerTheme = sourceToolItemsDock.ToolItemContainerTheme;
+                            targetToolItemsDock.ToolItemTemplateSelector = sourceToolItemsDock.ToolItemTemplateSelector;
+                            targetToolItemsDock.CanUpdateItemsSourceOnUnregister = sourceToolItemsDock.CanUpdateItemsSourceOnUnregister;
+                        }
+                    }
+
                     if (dock.VisibleDockables is not null)
                     {
                         AddVisibleDockable(dock, dockable);
@@ -456,8 +690,21 @@ public abstract partial class FactoryBase : IFactory
                             if (sourceDocumentDock is IDocumentDockContent sourceDocumentDockContent
                                 && targetDocumentDock is IDocumentDockContent targetDocumentDockContent)
                             {
-                                
                                 targetDocumentDockContent.DocumentTemplate = sourceDocumentDockContent.DocumentTemplate;
+                            }
+
+                            if (sourceDocumentDock is IItemsSourceDock sourceDocumentItemsDock
+                                && targetDocumentDock is IItemsSourceDock targetDocumentItemsDock)
+                            {
+                                targetDocumentItemsDock.DocumentItemContainerTheme = sourceDocumentItemsDock.DocumentItemContainerTheme;
+                                targetDocumentItemsDock.DocumentItemTemplateSelector = sourceDocumentItemsDock.DocumentItemTemplateSelector;
+                                targetDocumentItemsDock.CanUpdateItemsSourceOnUnregister = sourceDocumentItemsDock.CanUpdateItemsSourceOnUnregister;
+                            }
+
+                            if (sourceDocumentDock is IDocumentDockFactory sourceDocumentDockFactory
+                                && targetDocumentDock is IDocumentDockFactory targetDocumentDockFactory)
+                            {
+                                targetDocumentDockFactory.DocumentFactory = sourceDocumentDockFactory.DocumentFactory;
                             }
                         }
                     }
@@ -534,18 +781,40 @@ public abstract partial class FactoryBase : IFactory
     }
 
     /// <inheritdoc/>
+    public virtual IDockWindow? CreateWindowFrom(IDockable dockable, DockWindowOptions? options)
+    {
+        PrepareWindowOptionsForDockable(dockable, options);
+        var window = CreateWindowFrom(dockable);
+        if (window is not null)
+        {
+            ApplyWindowOptions(window, options);
+        }
+
+        return window;
+    }
+
+    /// <inheritdoc/>
     public virtual void SplitToWindow(IDock dock, IDockable dockable, double x, double y, double width, double height)
     {
-        var rootDock = FindRoot(dock, _ => true);
-        if (rootDock is null)
+        SplitToWindow(dock, dockable, x, y, width, height, null);
+    }
+
+    /// <inheritdoc/>
+    public virtual void SplitToWindow(IDock dock, IDockable dockable, double x, double y, double width, double height, DockWindowOptions? options)
+    {
+        var sourceRootDock = FindRoot(dock, _ => true);
+        if (sourceRootDock is null)
         {
             return;
         }
 
+        var rootDock = ResolveWindowCollectionRoot(sourceRootDock);
+
+        PrepareWindowOptionsForDockable(dockable, options);
         RemoveDockable(dockable, true);
         OnDockableUndocked(dockable, DockOperation.Window);
 
-        var window = CreateWindowFrom(dockable);
+        var window = CreateWindowFrom(dockable, options);
         if (window is not null)
         {
             AddWindow(rootDock, window);
@@ -553,7 +822,7 @@ public abstract partial class FactoryBase : IFactory
             window.Y = y;
             window.Width = width;
             window.Height = height;
-            window.Present(false);
+            window.Present(window.IsModal);
 
             OnDockableDocked(dockable, DockOperation.Window);
 

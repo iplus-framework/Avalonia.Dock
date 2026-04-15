@@ -4,13 +4,13 @@ using System.Runtime.Serialization;
 using Dock.Model.Adapters;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using ReactiveUI.SourceGenerators;
 
 namespace Dock.Model.ReactiveUI.Core;
 
 /// <summary>
 /// Dock window.
 /// </summary>
-[DataContract(IsReference = true)]
 public partial class DockWindow : ReactiveBase, IDockWindow
 {
     private readonly IHostAdapter _hostAdapter;
@@ -22,51 +22,89 @@ public partial class DockWindow : ReactiveBase, IDockWindow
     {
         _id = nameof(IDockWindow);
         _title = nameof(IDockWindow);
+        _windowState = DockWindowState.Normal;
+        OwnerMode = DockWindowOwnerMode.Default;
         _hostAdapter = new HostAdapter(this);
     }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial string Id { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [Reactive]
     public partial double X { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [Reactive]
     public partial double Y { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [Reactive]
     public partial double Width { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [Reactive]
     public partial double Height { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
+    public partial DockWindowState WindowState { get; set; }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial bool Topmost { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial string Title { get; set; }
 
     /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
+    public partial DockWindowOwnerMode OwnerMode { get; set; }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
+    public partial IDockWindow? ParentWindow { get; set; }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
+    public partial bool IsModal { get; set; }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
+    public partial bool? ShowInTaskbar { get; set; }
+
+    /// <inheritdoc/>
     [IgnoreDataMember]
+    [Reactive]
     public partial IDockable? Owner { get; set; }
 
     /// <inheritdoc/>
     [IgnoreDataMember]
+    [Reactive]
     public partial IFactory? Factory { get; set; }
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [Reactive]
     public partial IRootDock? Layout { get; set; }
 
     /// <inheritdoc/>
     [IgnoreDataMember]
+    [Reactive]
     public partial IHostWindow? Host { get; set; }
 
     /// <inheritdoc/>

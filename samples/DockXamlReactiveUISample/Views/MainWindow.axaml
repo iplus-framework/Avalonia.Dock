@@ -1,0 +1,219 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:model="using:Dock.Model.Avalonia.Controls"
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:vm="using:DockXamlReactiveUISample.ViewModels"
+        xmlns:infra="using:DockXamlReactiveUISample.Infrastructure"
+        xmlns:sampleModels="using:DockXamlReactiveUISample.Models"
+        x:Class="DockXamlReactiveUISample.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Dock ReactiveUI ItemsSource Sample"
+        Width="1280"
+        Height="800">
+
+  <Window.Resources>
+    <infra:SampleDocumentItemTemplateSelector x:Key="SampleDocumentItemTemplateSelector" />
+    <infra:SampleToolItemTemplateSelector x:Key="SampleToolItemTemplateSelector" />
+
+    <ControlTheme x:Key="SampleGeneratedDocumentContainerTheme"
+                  TargetType="dock:DocumentContentControl"
+                  BasedOn="{StaticResource {x:Type dock:DocumentContentControl}}">
+      <Setter Property="Margin" Value="3" />
+    </ControlTheme>
+
+    <ControlTheme x:Key="SampleGeneratedToolContainerTheme"
+                  TargetType="dock:ToolContentControl"
+                  BasedOn="{StaticResource {x:Type dock:ToolContentControl}}">
+      <Setter Property="Margin" Value="3" />
+    </ControlTheme>
+  </Window.Resources>
+
+  <DockPanel>
+
+    <Border DockPanel.Dock="Top" Padding="12" Background="#F3F4F6">
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Add Document" Command="{Binding AddDocumentCommand}" />
+          <Button Content="Remove Document" Command="{Binding RemoveDocumentCommand}" />
+          <Button Content="Add Tool" Command="{Binding AddToolCommand}" />
+          <Button Content="Remove Tool" Command="{Binding RemoveToolCommand}" />
+          <Button Content="Clear All" Command="{Binding ClearAllCommand}" />
+          <TextBlock Text="{Binding Summary}" Margin="16,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <CheckBox Content="Global UpdateItemsSourceOnUnregister"
+                    IsChecked="{Binding UpdateItemsSourceOnUnregister}" />
+          <CheckBox Content="Document Override (null = global)"
+                    IsThreeState="True"
+                    IsChecked="{Binding DocumentCanUpdateItemsSourceOnUnregister}" />
+          <CheckBox Content="Tool Override (null = global)"
+                    IsThreeState="True"
+                    IsChecked="{Binding ToolCanUpdateItemsSourceOnUnregister}" />
+        </StackPanel>
+
+        <Expander Header="Capability Policies" IsExpanded="False">
+          <StackPanel Spacing="8">
+            <Border Padding="8" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="4">
+              <StackPanel DataContext="{Binding RootCapabilities}" x:DataType="vm:CapabilityPolicyEditor" Spacing="4">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <WrapPanel Orientation="Horizontal" ItemHeight="24" ItemWidth="220">
+                  <CheckBox Content="CanClose" IsThreeState="True" IsChecked="{Binding CanClose}" />
+                  <CheckBox Content="CanPin" IsThreeState="True" IsChecked="{Binding CanPin}" />
+                  <CheckBox Content="CanFloat" IsThreeState="True" IsChecked="{Binding CanFloat}" />
+                  <CheckBox Content="CanDrag" IsThreeState="True" IsChecked="{Binding CanDrag}" />
+                  <CheckBox Content="CanDrop" IsThreeState="True" IsChecked="{Binding CanDrop}" />
+                  <CheckBox Content="CanDockAsDocument" IsThreeState="True" IsChecked="{Binding CanDockAsDocument}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Padding="8" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="4">
+              <StackPanel DataContext="{Binding ToolDockCapabilities}" x:DataType="vm:CapabilityPolicyEditor" Spacing="4">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <WrapPanel Orientation="Horizontal" ItemHeight="24" ItemWidth="220">
+                  <CheckBox Content="CanClose" IsThreeState="True" IsChecked="{Binding CanClose}" />
+                  <CheckBox Content="CanPin" IsThreeState="True" IsChecked="{Binding CanPin}" />
+                  <CheckBox Content="CanFloat" IsThreeState="True" IsChecked="{Binding CanFloat}" />
+                  <CheckBox Content="CanDrag" IsThreeState="True" IsChecked="{Binding CanDrag}" />
+                  <CheckBox Content="CanDrop" IsThreeState="True" IsChecked="{Binding CanDrop}" />
+                  <CheckBox Content="CanDockAsDocument" IsThreeState="True" IsChecked="{Binding CanDockAsDocument}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Padding="8" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="4">
+              <StackPanel DataContext="{Binding DocumentDockCapabilities}" x:DataType="vm:CapabilityPolicyEditor" Spacing="4">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <WrapPanel Orientation="Horizontal" ItemHeight="24" ItemWidth="220">
+                  <CheckBox Content="CanClose" IsThreeState="True" IsChecked="{Binding CanClose}" />
+                  <CheckBox Content="CanPin" IsThreeState="True" IsChecked="{Binding CanPin}" />
+                  <CheckBox Content="CanFloat" IsThreeState="True" IsChecked="{Binding CanFloat}" />
+                  <CheckBox Content="CanDrag" IsThreeState="True" IsChecked="{Binding CanDrag}" />
+                  <CheckBox Content="CanDrop" IsThreeState="True" IsChecked="{Binding CanDrop}" />
+                  <CheckBox Content="CanDockAsDocument" IsThreeState="True" IsChecked="{Binding CanDockAsDocument}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Expander>
+
+        <Expander Header="First Generated Item Overrides" IsExpanded="False">
+          <StackPanel Spacing="8">
+            <WrapPanel Orientation="Horizontal" ItemHeight="24" ItemWidth="260">
+              <CheckBox Content="First Document CanClose Override"
+                        IsThreeState="True"
+                        IsChecked="{Binding FirstDocumentCloseOverride}" />
+              <CheckBox Content="First Document CanFloat Override"
+                        IsThreeState="True"
+                        IsChecked="{Binding FirstDocumentFloatOverride}" />
+              <CheckBox Content="First Tool CanClose Override"
+                        IsThreeState="True"
+                        IsChecked="{Binding FirstToolCloseOverride}" />
+              <CheckBox Content="First Tool CanFloat Override"
+                        IsThreeState="True"
+                        IsChecked="{Binding FirstToolFloatOverride}" />
+            </WrapPanel>
+            <TextBlock Text="Override precedence: root policy -> dock policy -> generated container override."
+                       Opacity="0.75" />
+          </StackPanel>
+        </Expander>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Lookup First Document Container"
+                  Command="{Binding LookupDocumentContainerCommand}" />
+          <TextBlock Text="{Binding DocumentContainerLookup}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Lookup First Tool Container"
+                  Command="{Binding LookupToolContainerCommand}" />
+          <TextBlock Text="{Binding ToolContainerLookup}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <dock:DockControl x:DataType="vm:MainWindowViewModel"
+                      InitializeLayout="True"
+                      InitializeFactory="True"
+                      Factory="{Binding Factory}">
+
+      <model:RootDock x:Name="Root"
+                      Id="Root"
+                      IsCollapsable="False"
+                      RootDockCapabilityPolicy="{Binding RootDockCapabilityPolicy}"
+                      DefaultDockable="{Binding #MainLayout}"
+                      ActiveDockable="{Binding #MainLayout}">
+
+        <model:ProportionalDock x:Name="MainLayout" Id="MainLayout" Orientation="Horizontal">
+          <model:ProportionalDock.VisibleDockables>
+
+            <model:ToolDock Id="LeftTools"
+                            Title="Tools"
+                            Alignment="Left"
+                            Proportion="0.3"
+                            DockCapabilityPolicy="{Binding ToolDockCapabilityPolicy}"
+                            ToolItemContainerTheme="SampleGeneratedToolContainerTheme"
+                            ToolItemTemplateSelector="{StaticResource SampleToolItemTemplateSelector}"
+                            CanUpdateItemsSourceOnUnregister="{Binding ToolCanUpdateItemsSourceOnUnregister}"
+                            ItemsSource="{Binding Tools}">
+              <model:ToolDock.ItemContainerGenerator>
+                <infra:SampleDockItemContainerGenerator />
+              </model:ToolDock.ItemContainerGenerator>
+              <model:ToolDock.ToolTemplate>
+                <model:ToolTemplate>
+                  <Border Padding="12" x:DataType="infra:SampleGeneratedTool">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding SourceIndex, StringFormat='Generated Source Index: {0}'}" Opacity="0.75" />
+                      <StackPanel DataContext="{Binding Context}" x:DataType="sampleModels:ToolItem">
+                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Status}" Opacity="0.75" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </model:ToolTemplate>
+              </model:ToolDock.ToolTemplate>
+            </model:ToolDock>
+
+            <model:ProportionalDockSplitter />
+
+            <model:DocumentDock Id="Documents"
+                                Title="Documents"
+                                Proportion="0.7"
+                                CanCreateDocument="False"
+                                DockCapabilityPolicy="{Binding DocumentDockCapabilityPolicy}"
+                                DocumentItemContainerTheme="SampleGeneratedDocumentContainerTheme"
+                                DocumentItemTemplateSelector="{StaticResource SampleDocumentItemTemplateSelector}"
+                                CanUpdateItemsSourceOnUnregister="{Binding DocumentCanUpdateItemsSourceOnUnregister}"
+                                ItemsSource="{Binding Documents}">
+              <model:DocumentDock.ItemContainerGenerator>
+                <infra:SampleDockItemContainerGenerator />
+              </model:DocumentDock.ItemContainerGenerator>
+              <model:DocumentDock.DocumentTemplate>
+                <model:DocumentTemplate>
+                  <Border Padding="12" x:DataType="infra:SampleGeneratedDocument">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding SourceIndex, StringFormat='Generated Source Index: {0}'}" Opacity="0.75" />
+                      <StackPanel DataContext="{Binding Context}" x:DataType="sampleModels:DocumentItem">
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" />
+                        <TextBox Text="{Binding EditableContent}" AcceptsReturn="True" MinHeight="120" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Status}" Opacity="0.75" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </model:DocumentTemplate>
+              </model:DocumentDock.DocumentTemplate>
+            </model:DocumentDock>
+
+          </model:ProportionalDock.VisibleDockables>
+        </model:ProportionalDock>
+
+      </model:RootDock>
+
+    </dock:DockControl>
+  </DockPanel>
+</Window>

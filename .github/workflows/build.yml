@@ -13,8 +13,11 @@ on:
     - master
     - release/*
 
-jobs:
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
+jobs:
   build:
     strategy:
       matrix:
@@ -22,12 +25,64 @@ jobs:
     name: Build ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v1
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-    - name: Install wasm-tools
-      run: dotnet workload install wasm-tools wasm-experimental
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
     - name: Build
       run: dotnet build -c Release
+
+  test:
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
     - name: Test
       run: dotnet test -c Release
+
+  aot_sourcegen_sample:
+    needs: test
+    name: AOT source-gen sample
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - name: Install NativeAOT toolchain
+      run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+    - name: Publish AOT sample
+      run: dotnet publish samples/DockSystemTextJsonSourceGenAotSample/DockSystemTextJsonSourceGenAotSample.csproj -c Release -r linux-x64 -o artifacts/aot-sourcegen-sample
+    - name: Run AOT sample
+      run: ./artifacts/aot-sourcegen-sample/DockSystemTextJsonSourceGenAotSample
+
+  pack:
+    needs:
+    - test
+    - aot_sourcegen_sample
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - name: Pack
+      run: dotnet pack -c Release -o artifacts/nuget
+    - name: Upload NuGet artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-nuget-packages
+        path: |
+          artifacts/nuget/*.nupkg
+          artifacts/nuget/*.snupkg

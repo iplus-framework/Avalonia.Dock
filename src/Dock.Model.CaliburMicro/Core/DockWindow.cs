@@ -10,7 +10,6 @@ namespace Dock.Model.CaliburMicro.Core;
 /// <summary>
 /// Dock window.
 /// </summary>
-[DataContract(IsReference = true)]
 public class DockWindow : CaliburMicroBase, IDockWindow
 {
     private readonly IHostAdapter _hostAdapter;
@@ -19,8 +18,13 @@ public class DockWindow : CaliburMicroBase, IDockWindow
     private double _y;
     private double _width;
     private double _height;
+    private DockWindowState _windowState = DockWindowState.Normal;
     private bool _topmost;
     private string _title = nameof(IDockWindow);
+    private DockWindowOwnerMode _ownerMode;
+    private IDockWindow? _parentWindow;
+    private bool _isModal;
+    private bool? _showInTaskbar;
     private IDockable? _owner;
     private IFactory? _factory;
     private IRootDock? _layout;
@@ -31,6 +35,7 @@ public class DockWindow : CaliburMicroBase, IDockWindow
     /// </summary>
     public DockWindow()
     {
+        _ownerMode = DockWindowOwnerMode.Default;
         _hostAdapter = new HostAdapter(this);
     }
 
@@ -76,6 +81,14 @@ public class DockWindow : CaliburMicroBase, IDockWindow
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockWindowState WindowState
+    {
+        get => _windowState;
+        set => Set(ref _windowState, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public bool Topmost
     {
         get => _topmost;
@@ -88,6 +101,38 @@ public class DockWindow : CaliburMicroBase, IDockWindow
     {
         get => _title;
         set => Set(ref _title, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockWindowOwnerMode OwnerMode
+    {
+        get => _ownerMode;
+        set => Set(ref _ownerMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public IDockWindow? ParentWindow
+    {
+        get => _parentWindow;
+        set => Set(ref _parentWindow, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool IsModal
+    {
+        get => _isModal;
+        set => Set(ref _isModal, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool? ShowInTaskbar
+    {
+        get => _showInTaskbar;
+        set => Set(ref _showInTaskbar, value);
     }
 
     /// <inheritdoc/>

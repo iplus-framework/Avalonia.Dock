@@ -31,15 +31,21 @@ public class DockGroupValidationTests
         public bool IsActive { get; set; }
         public bool CanClose { get; set; } = true;
         public bool CanPin { get; set; } = true;
+        public bool KeepPinnedDockableVisible { get; set; }
+        public PinnedDockDisplayMode? PinnedDockDisplayModeOverride { get; set; }
+        public DockRect? PinnedBounds { get; set; }
         public bool CanFloat { get; set; } = true;
         public bool CanDrag { get; set; } = true;
         public bool CanDrop { get; set; } = true;
+        public bool CanDockAsDocument { get; set; } = true;
+        public DockCapabilityOverrides? DockCapabilityOverrides { get; set; }
         public bool IsModified { get; set; }
         public string? DockGroup { get; set; }
         public IFactory? Factory { get; set; }
         public bool IsEmpty { get; set; }
         public bool IsCollapsable { get; set; }
         public DockMode Dock { get; set; }
+        public DockingWindowState DockingState { get; set; } = DockingWindowState.Docked;
         public int Column { get; set; }
         public int Row { get; set; }
         public int ColumnSpan { get; set; } = 1;
@@ -86,6 +92,7 @@ public class DockGroupValidationTests
     private class SimpleDock : SimpleDockable, IDock
     {
         public bool CanCloseLastDockable { get; set; } = true;
+        public DockCapabilityPolicy? DockCapabilityPolicy { get; set; }
         public bool CanGoBack { get; } = false;
         public bool CanGoForward { get; } = false;
         public int OpenedDockablesCount { get; set; }

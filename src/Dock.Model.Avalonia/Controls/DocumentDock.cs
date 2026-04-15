@@ -9,21 +9,19 @@ using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
 using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.Reactive;
 using Dock.Model.Avalonia.Core;
 using Dock.Model.Avalonia.Internal;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Dock.Settings;
 
 namespace Dock.Model.Avalonia.Controls;
 
 /// <summary>
 /// Document dock.
 /// </summary>
-[DataContract(IsReference = true)]
-public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItemsSourceDock
+public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItemsSourceDock, IDocumentDockFactory
 {
     /// <summary>
     /// Defines the <see cref="CanCreateDocument"/> property.
@@ -50,14 +48,61 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
         AvaloniaProperty.Register<DocumentDock, DocumentTabLayout>(nameof(TabsLayout), DocumentTabLayout.Top);
 
     /// <summary>
+    /// Defines the <see cref="LayoutMode"/> property.
+    /// </summary>
+    public static readonly StyledProperty<DocumentLayoutMode> LayoutModeProperty =
+        AvaloniaProperty.Register<DocumentDock, DocumentLayoutMode>(nameof(LayoutMode), DocumentLayoutMode.Tabbed);
+
+    /// <summary>
+    /// Defines the <see cref="CloseButtonShowMode"/> property.
+    /// </summary>
+    public static readonly StyledProperty<DocumentCloseButtonShowMode> CloseButtonShowModeProperty =
+        AvaloniaProperty.Register<DocumentDock, DocumentCloseButtonShowMode>(nameof(CloseButtonShowMode), DocumentCloseButtonShowMode.Always);
+
+    /// <summary>
+    /// Defines the <see cref="EmptyContent"/> property.
+    /// </summary>
+    public static readonly StyledProperty<object?> EmptyContentProperty =
+        AvaloniaProperty.Register<DocumentDock, object?>(nameof(EmptyContent), "No documents open");
+
+    /// <summary>
     /// Defines the <see cref="ItemsSource"/> property.
     /// </summary>
     public static readonly StyledProperty<IEnumerable?> ItemsSourceProperty =
         AvaloniaProperty.Register<DocumentDock, IEnumerable?>(nameof(ItemsSource));
 
+    /// <summary>
+    /// Defines the <see cref="ItemContainerGenerator"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IDockItemContainerGenerator?> ItemContainerGeneratorProperty =
+        AvaloniaProperty.Register<DocumentDock, IDockItemContainerGenerator?>(nameof(ItemContainerGenerator));
+
+    /// <summary>
+    /// Defines the <see cref="DocumentItemContainerTheme"/> property.
+    /// </summary>
+    public static readonly StyledProperty<object?> DocumentItemContainerThemeProperty =
+        AvaloniaProperty.Register<DocumentDock, object?>(nameof(DocumentItemContainerTheme));
+
+    /// <summary>
+    /// Defines the <see cref="DocumentItemTemplateSelector"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IDocumentItemTemplateSelector?> DocumentItemTemplateSelectorProperty =
+        AvaloniaProperty.Register<DocumentDock, IDocumentItemTemplateSelector?>(nameof(DocumentItemTemplateSelector));
+
+    /// <summary>
+    /// Defines the <see cref="CanUpdateItemsSourceOnUnregister"/> property.
+    /// </summary>
+    public static readonly StyledProperty<bool?> CanUpdateItemsSourceOnUnregisterProperty =
+        AvaloniaProperty.Register<DocumentDock, bool?>(nameof(CanUpdateItemsSourceOnUnregister));
+
     private bool _canCreateDocument;
     private readonly HashSet<IDockable> _generatedDocuments = new();
+    private readonly Dictionary<IDockable, IDockItemContainerGenerator> _generatedDocumentGenerators = new();
     private IDisposable? _itemsSourceSubscription;
+    private IDisposable? _documentTemplateSubscription;
+    private IDisposable? _itemContainerGeneratorSubscription;
+    private IDisposable? _documentItemContainerThemeSubscription;
+    private IDisposable? _documentItemTemplateSelectorSubscription;
 
     /// <summary>
     /// Initializes new instance of the <see cref="DocumentDock"/> class.
@@ -65,9 +110,21 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     public DocumentDock()
     {
         CreateDocument = new Command(CreateNewDocument);
+        CascadeDocuments = new Command(CascadeDocumentsExecute);
+        TileDocumentsHorizontal = new Command(TileDocumentsHorizontalExecute);
+        TileDocumentsVertical = new Command(TileDocumentsVerticalExecute);
+        RestoreDocuments = new Command(RestoreDocumentsExecute);
         
         // Subscribe to ItemsSource property changes
         _itemsSourceSubscription = this.GetObservable(ItemsSourceProperty).Subscribe(new AnonymousObserver<IEnumerable?>(OnItemsSourceChanged));
+        _documentTemplateSubscription = this.GetObservable(DocumentTemplateProperty)
+            .Subscribe(new AnonymousObserver<IDocumentTemplate?>(_ => OnDocumentTemplateChanged()));
+        _itemContainerGeneratorSubscription = this.GetObservable(ItemContainerGeneratorProperty)
+            .Subscribe(new AnonymousObserver<IDockItemContainerGenerator?>(_ => OnItemContainerGeneratorChanged()));
+        _documentItemContainerThemeSubscription = this.GetObservable(DocumentItemContainerThemeProperty)
+            .Subscribe(new AnonymousObserver<object?>(_ => OnGeneratedItemPresentationChanged()));
+        _documentItemTemplateSelectorSubscription = this.GetObservable(DocumentItemTemplateSelectorProperty)
+            .Subscribe(new AnonymousObserver<IDocumentItemTemplateSelector?>(_ => OnGeneratedItemPresentationChanged()));
     }
 
     /// <summary>
@@ -80,6 +137,14 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
             // Unsubscribe from ItemsSource changes
             _itemsSourceSubscription?.Dispose();
             _itemsSourceSubscription = null;
+            _documentTemplateSubscription?.Dispose();
+            _documentTemplateSubscription = null;
+            _itemContainerGeneratorSubscription?.Dispose();
+            _itemContainerGeneratorSubscription = null;
+            _documentItemContainerThemeSubscription?.Dispose();
+            _documentItemContainerThemeSubscription = null;
+            _documentItemTemplateSelectorSubscription?.Dispose();
+            _documentItemTemplateSelectorSubscription = null;
 
             // Unsubscribe from collection changes
             if (_currentCollectionChanged != null)
@@ -114,6 +179,26 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     [JsonIgnore]
     public ICommand? CreateDocument { get; set; }
 
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public ICommand? CascadeDocuments { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public ICommand? TileDocumentsHorizontal { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public ICommand? TileDocumentsVertical { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public ICommand? RestoreDocuments { get; set; }
+
     /// <summary>
     /// Gets or sets document template.
     /// </summary>
@@ -132,6 +217,33 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     {
         get => GetValue(TabsLayoutProperty);
         set => SetValue(TabsLayoutProperty, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("CloseButtonShowMode")]
+    public DocumentCloseButtonShowMode CloseButtonShowMode
+    {
+        get => GetValue(CloseButtonShowModeProperty);
+        set => SetValue(CloseButtonShowModeProperty, value);
+    }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public object? EmptyContent
+    {
+        get => GetValue(EmptyContentProperty);
+        set => SetValue(EmptyContentProperty, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("LayoutMode")]
+    public DocumentLayoutMode LayoutMode
+    {
+        get => GetValue(LayoutModeProperty);
+        set => SetValue(LayoutModeProperty, value);
     }
 
     /// <summary>
@@ -155,6 +267,44 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     {
         get => GetValue(ItemsSourceProperty);
         set => SetValue(ItemsSourceProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the generator used to create and prepare containers for ItemsSource items.
+    /// </summary>
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public IDockItemContainerGenerator? ItemContainerGenerator
+    {
+        get => GetValue(ItemContainerGeneratorProperty);
+        set => SetValue(ItemContainerGeneratorProperty, value);
+    }
+
+    /// <inheritdoc />
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public object? DocumentItemContainerTheme
+    {
+        get => GetValue(DocumentItemContainerThemeProperty);
+        set => SetValue(DocumentItemContainerThemeProperty, value);
+    }
+
+    /// <inheritdoc />
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public IDocumentItemTemplateSelector? DocumentItemTemplateSelector
+    {
+        get => GetValue(DocumentItemTemplateSelectorProperty);
+        set => SetValue(DocumentItemTemplateSelectorProperty, value);
+    }
+
+    /// <inheritdoc />
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("CanUpdateItemsSourceOnUnregister")]
+    public bool? CanUpdateItemsSourceOnUnregister
+    {
+        get => GetValue(CanUpdateItemsSourceOnUnregisterProperty);
+        set => SetValue(CanUpdateItemsSourceOnUnregisterProperty, value);
     }
 
     /// <summary>
@@ -193,6 +343,46 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
         }
     }
 
+    private void CascadeDocumentsExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.CascadeDocuments(this);
+    }
+
+    private void TileDocumentsHorizontalExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.TileDocumentsHorizontal(this);
+    }
+
+    private void TileDocumentsVerticalExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.TileDocumentsVertical(this);
+    }
+
+    private void RestoreDocumentsExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.RestoreDocuments(this);
+    }
+
     /// <summary>
     /// Adds the specified document to this dock and makes it active and focused.
     /// </summary>
@@ -217,40 +407,74 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
 
     private INotifyCollectionChanged? _currentCollectionChanged;
 
+    private IDockItemContainerGenerator ResolveItemContainerGenerator()
+    {
+        return ItemContainerGenerator ?? DockItemContainerGenerator.Default;
+    }
+
+    private void OnItemContainerGeneratorChanged()
+    {
+        if (ItemsSource is null)
+        {
+            return;
+        }
+
+        RegenerateGeneratedDocuments(ItemsSource);
+    }
+
+    private void OnGeneratedItemPresentationChanged()
+    {
+        if (ItemsSource is null)
+        {
+            return;
+        }
+
+        RegenerateGeneratedDocuments(ItemsSource);
+    }
+
+    private void OnDocumentTemplateChanged()
+    {
+        if (ItemsSource is null)
+        {
+            return;
+        }
+
+        RegenerateGeneratedDocuments(ItemsSource);
+    }
+
+    private void RegenerateGeneratedDocuments(IEnumerable itemsSource)
+    {
+        ClearGeneratedDocuments();
+
+        var index = 0;
+        foreach (var item in itemsSource)
+        {
+            AddDocumentFromItem(item, index);
+            index++;
+        }
+    }
+
     private void OnItemsSourceChanged(IEnumerable? newItemsSource)
     {
-        System.Diagnostics.Debug.WriteLine($"DocumentDock.OnItemsSourceChanged called with: {newItemsSource?.GetType().Name}, Count: {newItemsSource?.Cast<object>().Count() ?? 0}");
-        
-        // Unsubscribe from old collection
         if (_currentCollectionChanged != null)
         {
             _currentCollectionChanged.CollectionChanged -= OnCollectionChanged;
             _currentCollectionChanged = null;
         }
 
-        // Remove all documents that were generated from ItemsSource
-        ClearGeneratedDocuments();
-
-        // Subscribe to new collection if it supports change notifications
         if (newItemsSource is INotifyCollectionChanged notifyCollection)
         {
             _currentCollectionChanged = notifyCollection;
             _currentCollectionChanged.CollectionChanged += OnCollectionChanged;
-            System.Diagnostics.Debug.WriteLine("Subscribed to collection change notifications");
         }
 
-        // Generate documents for new collection
-        if (newItemsSource != null)
+        if (newItemsSource is null)
         {
-            int count = 0;
-            foreach (var item in newItemsSource)
-            {
-                System.Diagnostics.Debug.WriteLine($"Adding document for item {count}: {item}");
-                AddDocumentFromItem(item);
-                count++;
-            }
-            System.Diagnostics.Debug.WriteLine($"Added {count} documents to DocumentDock. VisibleDockables count: {VisibleDockables?.Count ?? 0}");
+            ClearGeneratedDocuments();
+            return;
         }
+
+        RegenerateGeneratedDocuments(newItemsSource);
     }
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -260,9 +484,12 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
             case NotifyCollectionChangedAction.Add:
                 if (e.NewItems != null)
                 {
+                    var addIndex = e.NewStartingIndex;
+                    var offset = 0;
                     foreach (var item in e.NewItems)
                     {
-                        AddDocumentFromItem(item);
+                        AddDocumentFromItem(item, addIndex >= 0 ? addIndex + offset : -1);
+                        offset++;
                     }
                 }
                 break;
@@ -287,182 +514,102 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
                 }
                 if (e.NewItems != null)
                 {
+                    var replaceIndex = e.NewStartingIndex;
+                    var offset = 0;
                     foreach (var item in e.NewItems)
                     {
-                        AddDocumentFromItem(item);
+                        AddDocumentFromItem(item, replaceIndex >= 0 ? replaceIndex + offset : -1);
+                        offset++;
                     }
                 }
                 break;
 
             case NotifyCollectionChangedAction.Reset:
-                ClearGeneratedDocuments();
                 if (ItemsSource != null)
                 {
-                    foreach (var item in ItemsSource)
-                    {
-                        AddDocumentFromItem(item);
-                    }
+                    RegenerateGeneratedDocuments(ItemsSource);
+                }
+                else
+                {
+                    ClearGeneratedDocuments();
                 }
                 break;
         }
     }
 
-    private void AddDocumentFromItem(object? item)
+    private void AddDocumentFromItem(object? item, int index)
     {
         if (item == null)
+        {
             return;
-
-        // If there's no DocumentTemplate at all, don't create documents
-        if (DocumentTemplate == null)
-            return;
-
-        // Create a new Document using the DocumentTemplate
-        var document = new Document
-        {
-            Id = Guid.NewGuid().ToString(),
-            Title = GetDocumentTitle(item),
-            Context = item, // Set the data context to the item
-            CanClose = GetDocumentCanClose(item)
-        };
-
-        // Use the DocumentTemplate to create content by setting the Content to a function
-        // that builds the template with the item as data context
-        // Set up document content using DocumentTemplate if available
-        if (DocumentTemplate is DocumentTemplate template && template.Content != null)
-        {
-            // Use the DocumentTemplate.Content directly - let the Document handle the template building
-            document.Content = template.Content;
-        }
-        else
-        {
-            // Template exists but has no content, create fallback content
-            document.Content = new Func<IServiceProvider, object>(_ => CreateFallbackContent(document, item));
         }
 
-        // Add to our tracking collection
+        var generator = ResolveItemContainerGenerator();
+        var document = generator.CreateDocumentContainer(this, item, index);
+        if (document is null)
+        {
+            return;
+        }
+
+        if (document is not IDocument)
+        {
+            generator.ClearDocumentContainer(this, document, item);
+            return;
+        }
+
+        generator.PrepareDocumentContainer(this, document, item, index);
+
         _generatedDocuments.Add(document);
+        _generatedDocumentGenerators[document] = generator;
+        TrackItemsSourceDocument(document, item);
 
-        // Use the proper AddDocument API if Factory is available, otherwise add manually
         if (Factory != null)
         {
-            // Use the proper AddDocument API which handles adding, making active, and focused
             AddDocument(document);
+            return;
         }
-        else
+
+        if (VisibleDockables == null)
         {
-            // Fallback for unit tests or when no Factory is set
-            if (VisibleDockables == null)
-            {
-                VisibleDockables = new global::Avalonia.Collections.AvaloniaList<IDockable>();
-            }
-
-            VisibleDockables.Add(document);
-
-            // Set as active if it's the first document
-            if (VisibleDockables.Count == 1)
-            {
-                ActiveDockable = document;
-            }
+            VisibleDockables = new global::Avalonia.Collections.AvaloniaList<IDockable>();
         }
-    }
 
-    private Control CreateFallbackContent(Document document, object? item)
-    {
-        var contentPanel = new StackPanel { Margin = new Thickness(10) };
-        
-        // First TextBlock: Document title
-        var titleBlock = new TextBlock 
-        { 
-            Text = document.Title ?? "Document", 
-            FontWeight = FontWeight.Bold,
-            FontSize = 16,
-            Background = Brushes.LightBlue,
-            Padding = new Thickness(5),
-            Margin = new Thickness(0, 0, 0, 10)
-        };
-        contentPanel.Children.Add(titleBlock);
-        
-        // Second TextBlock: Item's ToString() representation
-        var contentBlock = new TextBlock 
-        { 
-            Text = item?.ToString() ?? "No content",
-            Background = Brushes.LightGray,
-            Padding = new Thickness(5),
-            TextWrapping = TextWrapping.Wrap
-        };
-        contentPanel.Children.Add(contentBlock);
-        
-        // Set DataContext to the item (as expected by tests)
-        contentPanel.DataContext = item;
-        return contentPanel;
+        VisibleDockables.Add(document);
+        if (VisibleDockables.Count == 1)
+        {
+            ActiveDockable = document;
+        }
     }
 
     private void RemoveDocumentFromItem(object? item)
     {
         if (item == null)
+        {
             return;
+        }
 
-        // Find the document that corresponds to this item
-        var documentToRemove = _generatedDocuments
-            .OfType<Document>()
-            .FirstOrDefault(d => ReferenceEquals(d.Context, item));
+        var documentToRemove = FindGeneratedDocument(item);
 
         if (documentToRemove != null)
         {
             _generatedDocuments.Remove(documentToRemove);
-            VisibleDockables?.Remove(documentToRemove);
+            UntrackItemsSourceDocument(documentToRemove);
+            ClearGeneratedDocumentContainer(documentToRemove, item);
+            RemoveGeneratedDocumentFromVisibleDockables(documentToRemove);
         }
     }
 
     private void ClearGeneratedDocuments()
     {
-        if (VisibleDockables != null)
+        foreach (var document in _generatedDocuments.ToList())
         {
-            // Remove all generated documents from VisibleDockables
-            var documentsToRemove = _generatedDocuments.ToList();
-            foreach (var document in documentsToRemove)
-            {
-                VisibleDockables.Remove(document);
-            }
+            UntrackItemsSourceDocument(document);
+            ClearGeneratedDocumentContainer(document, document.Context);
+            RemoveGeneratedDocumentFromVisibleDockables(document);
         }
 
         _generatedDocuments.Clear();
-    }
-
-    private string GetDocumentTitle(object item)
-    {
-        // Try to get title from common properties
-        var type = item.GetType();
-        
-        // Check for Title property
-        var titleProperty = type.GetProperty("Title");
-        if (titleProperty?.GetValue(item) is string title)
-            return title;
-
-        // Check for Name property
-        var nameProperty = type.GetProperty("Name");
-        if (nameProperty?.GetValue(item) is string name)
-            return name;
-
-        // Check for DisplayName property
-        var displayNameProperty = type.GetProperty("DisplayName");
-        if (displayNameProperty?.GetValue(item) is string displayName)
-            return displayName;
-
-        // Fallback to ToString or type name
-        return item.ToString() ?? type.Name;
-    }
-
-    private bool GetDocumentCanClose(object item)
-    {
-        // Try to get CanClose from the item
-        var type = item.GetType();
-        var canCloseProperty = type.GetProperty("CanClose");
-        if (canCloseProperty?.GetValue(item) is bool canClose)
-            return canClose;
-
-        // Default to true
-        return true;
+        _generatedDocumentGenerators.Clear();
     }
 
     /// <summary>
@@ -474,20 +621,50 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     /// <returns>True if the item was successfully removed, false otherwise.</returns>
     public virtual bool RemoveItemFromSource(object? item)
     {
-        if (item == null || ItemsSource == null)
+        if (item == null)
+        {
             return false;
+        }
+
+        if (!ShouldUpdateItemsSourceOnUnregister())
+        {
+            UntrackGeneratedDocument(item);
+            return false;
+        }
 
         // Only support IList<T> or IList collections
         if (ItemsSource is System.Collections.IList list)
         {
             if (list.Contains(item))
             {
-                list.Remove(item);
-                return true;
+                try
+                {
+                    list.Remove(item);
+
+                    // Non-notify sources will not raise collection changed events.
+                    if (_currentCollectionChanged is null)
+                    {
+                        UntrackGeneratedDocument(item);
+                    }
+
+                    return true;
+                }
+                catch (NotSupportedException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
             }
         }
 
+        UntrackGeneratedDocument(item);
         return false;
+    }
+
+    private bool ShouldUpdateItemsSourceOnUnregister()
+    {
+        return CanUpdateItemsSourceOnUnregister ?? DockSettings.UpdateItemsSourceOnUnregister;
     }
 
     /// <summary>
@@ -498,5 +675,85 @@ public class DocumentDock : DockBase, IDocumentDock, IDocumentDockContent, IItem
     public virtual bool IsDocumentFromItemsSource(IDockable document)
     {
         return _generatedDocuments.Contains(document);
+    }
+
+    private void UntrackGeneratedDocument(object item)
+    {
+        var generatedDocument = FindGeneratedDocument(item);
+
+        if (generatedDocument != null)
+        {
+            _generatedDocuments.Remove(generatedDocument);
+            UntrackItemsSourceDocument(generatedDocument);
+            ClearGeneratedDocumentContainer(generatedDocument, item);
+        }
+    }
+
+    private IDockable? FindGeneratedDocument(object item)
+    {
+        foreach (var generatedDocument in _generatedDocuments)
+        {
+            if (IsMatchingContext(generatedDocument.Context, item))
+            {
+                return generatedDocument;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsMatchingContext(object? context, object? item)
+    {
+        if (ReferenceEquals(context, item))
+        {
+            return true;
+        }
+
+        return Equals(context, item);
+    }
+
+    private void ClearGeneratedDocumentContainer(IDockable document, object? item)
+    {
+        if (_generatedDocumentGenerators.TryGetValue(document, out var generator))
+        {
+            _generatedDocumentGenerators.Remove(document);
+            generator.ClearDocumentContainer(this, document, item);
+            return;
+        }
+
+        ResolveItemContainerGenerator().ClearDocumentContainer(this, document, item);
+    }
+
+    private void RemoveGeneratedDocumentFromVisibleDockables(IDockable document)
+    {
+        if (document.Owner is IDock owner)
+        {
+            if (owner.VisibleDockables?.Remove(document) == true && ReferenceEquals(owner.ActiveDockable, document))
+            {
+                owner.ActiveDockable = owner.VisibleDockables.FirstOrDefault();
+            }
+            return;
+        }
+
+        if (VisibleDockables?.Remove(document) == true && ReferenceEquals(ActiveDockable, document))
+        {
+            ActiveDockable = VisibleDockables.FirstOrDefault();
+        }
+    }
+
+    private void TrackItemsSourceDocument(IDockable document, object item)
+    {
+        if (Factory is global::Dock.Model.FactoryBase factoryBase)
+        {
+            factoryBase.TrackItemsSourceDockable(document, this, item);
+        }
+    }
+
+    private void UntrackItemsSourceDocument(IDockable document)
+    {
+        if (Factory is global::Dock.Model.FactoryBase factoryBase)
+        {
+            factoryBase.UntrackItemsSourceDockable(document);
+        }
     }
 }

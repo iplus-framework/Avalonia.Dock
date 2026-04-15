@@ -13,7 +13,6 @@ namespace Dock.Model.Mvvm.Controls;
 /// <summary>
 /// Root dock.
 /// </summary>
-[DataContract(IsReference = true)]
 public class RootDock : DockBase, IRootDock, ILocalTarget
 {
     private bool _isFocusableRoot = true;
@@ -25,6 +24,9 @@ public class RootDock : DockBase, IRootDock, ILocalTarget
     private IDockWindow? _window;
     private IList<IDockWindow>? _windows;
     private IToolDock? _pinnedDock;
+    private PinnedDockDisplayMode _pinnedDockDisplayMode = PinnedDockDisplayMode.Overlay;
+    private DockFloatingWindowHostMode _floatingWindowHostMode = DockFloatingWindowHostMode.Default;
+    private DockCapabilityPolicy? _rootDockCapabilityPolicy;
     private bool _enableAdaptiveGlobalDockTargets;
 
     /// <summary>
@@ -94,6 +96,14 @@ public class RootDock : DockBase, IRootDock, ILocalTarget
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public PinnedDockDisplayMode PinnedDockDisplayMode
+    {
+        get => _pinnedDockDisplayMode;
+        set => SetProperty(ref _pinnedDockDisplayMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public IDockWindow? Window
     {
         get => _window;
@@ -106,6 +116,22 @@ public class RootDock : DockBase, IRootDock, ILocalTarget
     {
         get => _windows;
         set => SetProperty(ref _windows, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockFloatingWindowHostMode FloatingWindowHostMode
+    {
+        get => _floatingWindowHostMode;
+        set => SetProperty(ref _floatingWindowHostMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DockCapabilityPolicy? RootDockCapabilityPolicy
+    {
+        get => _rootDockCapabilityPolicy;
+        set => SetProperty(ref _rootDockCapabilityPolicy, value);
     }
 
     /// <inheritdoc/>

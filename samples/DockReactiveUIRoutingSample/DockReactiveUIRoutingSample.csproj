@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!--<TargetFramework>net9.0</TargetFramework>-->
+    <!--<TargetFramework>net10.0</TargetFramework>-->
     <TargetFramework>$(AvaloniaBuildFramework)</TargetFramework>
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
-    <AvaloniaNameGeneratorBehavior>OnlyProperties</AvaloniaNameGeneratorBehavior>
+    <AvaloniaNameGeneratorBehavior>InitializeComponent</AvaloniaNameGeneratorBehavior>
+    <DockEnableGeneratedAppInitializeComponent>true</DockEnableGeneratedAppInitializeComponent>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
@@ -15,9 +16,8 @@
   <Import Project="..\..\build\Avalonia.Themes.Fluent.props" />
   <Import Project="..\..\build\Avalonia.Desktop.props" />
   <Import Project="..\..\build\Avalonia.ReactiveUI.props" />
-  <Import Project="..\..\build\Avalonia.Diagnostics.props" />
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Dock.Model.ReactiveUI.Navigation\Dock.Model.ReactiveUI.Navigation.csproj" />
+    <ProjectReference Include="..\..\src\Dock.Model.ReactiveUI.Services\Dock.Model.ReactiveUI.Services.csproj" />
     <ProjectReference Include="..\..\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
     <ProjectReference Include="..\..\src\Dock.Avalonia\Dock.Avalonia.csproj" />
     <ProjectReference Include="..\..\src\Dock.Avalonia.Diagnostics\Dock.Avalonia.Diagnostics.csproj" />

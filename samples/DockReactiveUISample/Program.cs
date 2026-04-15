@@ -1,9 +1,10 @@
 // Copyright (c) Wiesław Šoltés. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 using Avalonia;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Dock.Settings;
 
 namespace DockReactiveUISample;
 
@@ -22,5 +23,8 @@ internal class Program
             .UsePlatformDetect()
             .WithInterFont()
             .UseReactiveUI()
+            .ShowDockablePreviewOnDrag()
+            .SetDragPreviewOpacity(0.6)
+            // .UseManagedWindows()
             .LogToTrace();
 }

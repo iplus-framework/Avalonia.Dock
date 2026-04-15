@@ -3,12 +3,17 @@
 using System;
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Reactive;
+using Dock.Avalonia.Automation.Peers;
+using Dock.Avalonia.Internal;
 
 namespace Dock.Avalonia.Controls;
 
@@ -19,10 +24,12 @@ namespace Dock.Avalonia.Controls;
 public class ToolTabStrip : TabStrip
 {
     private readonly Dictionary<ToolTabStripItem, IDisposable[]> _containerObservables = new();
+    private readonly List<IDisposable> _templateObservables = new();
     private Border? _borderLeftFill;
     private Border? _borderRightFill;
     private ItemsPresenter? _itemsPresenter;
     private ScrollViewer? _scrollViewer;
+    private IDisposable? _scrollViewerWheelSubscription;
 
     /// <summary>
     /// Defines the <see cref="CanCreateItem"/> property.
@@ -31,12 +38,74 @@ public class ToolTabStrip : TabStrip
         AvaloniaProperty.Register<ToolTabStrip, bool>(nameof(CanCreateItem));
 
     /// <summary>
+    /// Defines the <see cref="MouseWheelScrollOrientation"/> property.
+    /// </summary>
+    public static readonly StyledProperty<Orientation> MouseWheelScrollOrientationProperty =
+        AvaloniaProperty.Register<ToolTabStrip, Orientation>(
+            nameof(MouseWheelScrollOrientation),
+            defaultValue: Orientation.Horizontal);
+
+    /// <summary>
+    /// Defines the <see cref="IconTemplate"/> property.
+    /// </summary>
+    public static readonly StyledProperty<object?> IconTemplateProperty =
+        AvaloniaProperty.Register<ToolTabStrip, object?>(nameof(IconTemplate));
+
+    /// <summary>
+    /// Defines the <see cref="HeaderTemplate"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IDataTemplate?> HeaderTemplateProperty =
+        AvaloniaProperty.Register<ToolTabStrip, IDataTemplate?>(nameof(HeaderTemplate));
+
+    /// <summary>
+    /// Defines the <see cref="ModifiedTemplate"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IDataTemplate?> ModifiedTemplateProperty =
+        AvaloniaProperty.Register<ToolTabStrip, IDataTemplate?>(nameof(ModifiedTemplate));
+
+    /// <summary>
     /// Gets or sets if tab strop dock can create new items.
     /// </summary>
     public bool CanCreateItem
     {
         get => GetValue(CanCreateItemProperty);
         set => SetValue(CanCreateItemProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets orientation used for mouse wheel scrolling in the tab strip.
+    /// </summary>
+    public Orientation MouseWheelScrollOrientation
+    {
+        get => GetValue(MouseWheelScrollOrientationProperty);
+        set => SetValue(MouseWheelScrollOrientationProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets tab icon template.
+    /// </summary>
+    public object? IconTemplate
+    {
+        get => GetValue(IconTemplateProperty);
+        set => SetValue(IconTemplateProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets tab header template.
+    /// </summary>
+    public IDataTemplate? HeaderTemplate
+    {
+        get => GetValue(HeaderTemplateProperty);
+        set => SetValue(HeaderTemplateProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets tab modified template.
+    /// </summary>
+    public IDataTemplate? ModifiedTemplate
+    {
+        get => GetValue(ModifiedTemplateProperty);
+        set => SetValue(ModifiedTemplateProperty, value);
     }
 
     /// <inheritdoc/>
@@ -51,28 +120,60 @@ public class ToolTabStrip : TabStrip
     }
 
     /// <inheritdoc/>
+    protected override AutomationPeer OnCreateAutomationPeer()
+    {
+        return new ToolTabStripAutomationPeer(this);
+    }
+
+    /// <inheritdoc/>
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+
+        AttachScrollViewerWheel(null);
+        ClearTemplateObservables();
 
         _borderLeftFill = e.NameScope.Find<Border>("PART_BorderLeftFill");
         _borderRightFill = e.NameScope.Find<Border>("PART_BorderRightFill");
         _itemsPresenter = e.NameScope.Find<ItemsPresenter>("PART_ItemsPresenter");
         _scrollViewer = e.NameScope.Find<ScrollViewer>("PART_ScrollViewer");
+        AttachScrollViewerWheel(_scrollViewer);
 
-        _itemsPresenter?.GetObservable(Border.BoundsProperty)
-            .Subscribe(new AnonymousObserver<Rect>(_ => UpdateBorders()));
+        if (_itemsPresenter is not null)
+        {
+            _templateObservables.Add(_itemsPresenter.GetObservable(Border.BoundsProperty)
+                .Subscribe(new AnonymousObserver<Rect>(_ => UpdateBorders())));
+        }
 
-        _scrollViewer?.GetObservable(ScrollViewer.OffsetProperty)
-            .Subscribe(new AnonymousObserver<Vector>(_ => UpdateBorders()));
+        if (_scrollViewer is not null)
+        {
+            _templateObservables.Add(_scrollViewer.GetObservable(ScrollViewer.OffsetProperty)
+                .Subscribe(new AnonymousObserver<Vector>(_ => UpdateBorders())));
+        }
 
-        this.GetObservable(SelectedItemProperty)
-            .Subscribe(new AnonymousObserver<object?>(_ => UpdateBorders()));
+        _templateObservables.Add(this.GetObservable(SelectedItemProperty)
+            .Subscribe(new AnonymousObserver<object?>(_ => UpdateBorders())));
 
-        this.GetObservable(BoundsProperty)
-            .Subscribe(new AnonymousObserver<Rect>(_ => UpdateBorders()));
+        _templateObservables.Add(this.GetObservable(BoundsProperty)
+            .Subscribe(new AnonymousObserver<Rect>(_ => UpdateBorders())));
 
         UpdateBorders();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        AttachScrollViewerWheel(null);
+        ClearTemplateObservables();
+        ClearContainerObservables();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        AttachScrollViewerWheel(_scrollViewer);
     }
 
     private void OnContainerAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -149,6 +250,8 @@ public class ToolTabStrip : TabStrip
 
         if (container is ToolTabStripItem tabStripItem)
         {
+            tabStripItem.AttachedToVisualTree -= OnContainerAttachedToVisualTree;
+            tabStripItem.DetachedFromVisualTree -= OnContainerDetachedFromVisualTree;
             tabStripItem.AttachedToVisualTree += OnContainerAttachedToVisualTree;
             tabStripItem.DetachedFromVisualTree += OnContainerDetachedFromVisualTree;
         }
@@ -175,10 +278,53 @@ public class ToolTabStrip : TabStrip
         {
             UpdatePseudoClasses(change.GetNewValue<bool>());
         }
+
+        if (change.Property == MouseWheelScrollOrientationProperty)
+        {
+            AttachScrollViewerWheel(_scrollViewer);
+        }
     }
 
     private void UpdatePseudoClasses(bool canCreate)
     {
         PseudoClasses.Set(":create", canCreate);
+    }
+
+    private void AttachScrollViewerWheel(ScrollViewer? scrollViewer)
+    {
+        _scrollViewerWheelSubscription?.Dispose();
+        _scrollViewerWheelSubscription = ScrollViewerMouseWheelHookHelper.Attach(scrollViewer, MouseWheelScrollOrientation);
+    }
+
+    private void ClearTemplateObservables()
+    {
+        foreach (var observable in _templateObservables)
+        {
+            observable.Dispose();
+        }
+
+        _templateObservables.Clear();
+    }
+
+    private void ClearContainerObservables()
+    {
+        if (_containerObservables.Count == 0)
+        {
+            return;
+        }
+
+        var entries = new List<KeyValuePair<ToolTabStripItem, IDisposable[]>>(_containerObservables);
+        foreach (var entry in entries)
+        {
+            foreach (var disposable in entry.Value)
+            {
+                disposable.Dispose();
+            }
+
+            entry.Key.AttachedToVisualTree -= OnContainerAttachedToVisualTree;
+            entry.Key.DetachedFromVisualTree -= OnContainerDetachedFromVisualTree;
+        }
+
+        _containerObservables.Clear();
     }
 }

@@ -5,7 +5,8 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Dock.Avalonia.Diagnostics.Controls;
 using Dock.Avalonia.Diagnostics;
-using DockReactiveUISample.Themes;
+using Dock.Avalonia.Themes;
+using Dock.Avalonia.Themes.Fluent;
 using DockReactiveUISample.ViewModels;
 using DockReactiveUISample.Views;
 
@@ -13,15 +14,18 @@ namespace DockReactiveUISample;
 
 [RequiresUnreferencedCode("Requires unreferenced code for MainWindowViewModel.")]
 [RequiresDynamicCode("Requires unreferenced code for MainWindowViewModel.")]
-public class App : Application
+public partial class App : Application
 {
-    public static IThemeManager? ThemeManager;
+    public static IDockThemeManager? ThemeManager;
 
     public override void Initialize()
     {
-        ThemeManager = new FluentThemeManager();
-
+        ThemeManager = new DockFluentThemeManager();
+#if DOCK_USE_GENERATED_APP_INITIALIZE_COMPONENT
+        InitializeComponent();
+#else
         AvaloniaXamlLoader.Load(this);
+#endif
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -72,8 +76,5 @@ public class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-#if DEBUG
-        this.AttachDevTools();
-#endif
     }
 }

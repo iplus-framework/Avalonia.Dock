@@ -48,6 +48,11 @@ public interface IRootDock : IDock
     IToolDock? PinnedDock { get; set; }
 
     /// <summary>
+    /// Gets or sets pinned dock display mode.
+    /// </summary>
+    PinnedDockDisplayMode PinnedDockDisplayMode { get; set; }
+
+    /// <summary>
     /// Gets or sets owner window.
     /// </summary>
     IDockWindow? Window { get; set; }
@@ -56,6 +61,17 @@ public interface IRootDock : IDock
     /// Gets or sets windows.
     /// </summary>
     IList<IDockWindow>? Windows { get; set; }
+
+    /// <summary>
+    /// Gets or sets the floating window host mode override.
+    /// </summary>
+    DockFloatingWindowHostMode FloatingWindowHostMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional root-wide capability policy values.
+    /// Null values inherit dockable base flag values.
+    /// </summary>
+    DockCapabilityPolicy? RootDockCapabilityPolicy { get; set; }
 
     /// <summary>
     /// Show windows.

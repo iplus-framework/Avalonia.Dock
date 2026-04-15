@@ -41,6 +41,7 @@ internal class ItemDragHelper
     private const double AutoScrollSpeed = 200.0; // pixels per second
     private const double AutoScrollTimerInterval = 16.0; // ~60fps
     private PointerEventArgs? _pressedArgs;
+    private const int DefaultDraggedContainerZIndex = 1;
 
     public ItemDragHelper(
         Control owner,
@@ -94,7 +95,7 @@ internal class ItemDragHelper
             if (_draggedContainer is not null)
             {
                 SetDraggingPseudoClasses(_draggedContainer, true);
-                _draggedContainer.SetCurrentValue(Visual.ZIndexProperty, 1);
+                _draggedContainer.SetCurrentValue(Panel.ZIndexProperty, GetDraggedContainerZIndex(itemsControl, _draggedContainer));
             }
 
             AddTransforms(_itemsControl);
@@ -134,7 +135,7 @@ internal class ItemDragHelper
 
         StopAutoScroll();
 
-        _draggedContainer?.ClearValue(Visual.ZIndexProperty);
+        _draggedContainer?.ClearValue(Panel.ZIndexProperty);
         
         RemoveTransforms(_itemsControl);
 
@@ -174,6 +175,23 @@ internal class ItemDragHelper
         _itemsControl = null;
 
         _draggedContainer = null;
+    }
+
+    private static int GetDraggedContainerZIndex(ItemsControl itemsControl, Control draggedContainer)
+    {
+        var maxZIndex = 0;
+
+        foreach (var container in itemsControl.GetRealizedContainers())
+        {
+            if (ReferenceEquals(container, draggedContainer))
+            {
+                continue;
+            }
+
+            maxZIndex = Math.Max(maxZIndex, container.GetValue(Panel.ZIndexProperty));
+        }
+
+        return Math.Max(DefaultDraggedContainerZIndex, maxZIndex + 1);
     }
 
     private void AddTransforms(ItemsControl? itemsControl)
@@ -290,25 +308,7 @@ internal class ItemDragHelper
             Interval = TimeSpan.FromMilliseconds(AutoScrollTimerInterval)
         };
 
-        _autoScrollTimer.Tick += (_, _) =>
-        {
-            if (_currentScrollViewer == null)
-            {
-                StopAutoScroll();
-                return;
-            }
-
-            var deltaTime = AutoScrollTimerInterval / 1000.0; // Convert to seconds
-            var deltaX = _autoScrollVelocity.X * deltaTime;
-            var deltaY = _autoScrollVelocity.Y * deltaTime;
-
-            var newOffsetX = Math.Max(0, Math.Min(_currentScrollViewer.Extent.Width - _currentScrollViewer.Viewport.Width, 
-                _currentScrollViewer.Offset.X + deltaX));
-            var newOffsetY = Math.Max(0, Math.Min(_currentScrollViewer.Extent.Height - _currentScrollViewer.Viewport.Height, 
-                _currentScrollViewer.Offset.Y + deltaY));
-
-            _currentScrollViewer.Offset = new Vector(newOffsetX, newOffsetY);
-        };
+        _autoScrollTimer.Tick += OnAutoScrollTick;
 
         _autoScrollTimer.Start();
     }
@@ -317,11 +317,33 @@ internal class ItemDragHelper
     {
         if (_autoScrollTimer != null)
         {
+            _autoScrollTimer.Tick -= OnAutoScrollTick;
             _autoScrollTimer.Stop();
             _autoScrollTimer = null;
         }
+
         _currentScrollViewer = null;
         _autoScrollVelocity = default;
+    }
+
+    private void OnAutoScrollTick(object? sender, EventArgs e)
+    {
+        if (_currentScrollViewer == null)
+        {
+            StopAutoScroll();
+            return;
+        }
+
+        var deltaTime = AutoScrollTimerInterval / 1000.0; // Convert to seconds
+        var deltaX = _autoScrollVelocity.X * deltaTime;
+        var deltaY = _autoScrollVelocity.Y * deltaTime;
+
+        var newOffsetX = Math.Max(0, Math.Min(_currentScrollViewer.Extent.Width - _currentScrollViewer.Viewport.Width,
+            _currentScrollViewer.Offset.X + deltaX));
+        var newOffsetY = Math.Max(0, Math.Min(_currentScrollViewer.Extent.Height - _currentScrollViewer.Viewport.Height,
+            _currentScrollViewer.Offset.Y + deltaY));
+
+        _currentScrollViewer.Offset = new Vector(newOffsetX, newOffsetY);
     }
 
     private Vector CalculateAutoScrollVelocity(Point position, ScrollViewer scrollViewer)
@@ -448,6 +470,7 @@ internal class ItemDragHelper
             if (!IsPositionWithinDragBounds(position, _itemsControl))
             {
                 _dragStarted = false;
+                SelectDraggedItemIfNeeded();
                 Released();
                 _captured = false;
                 _dragOutside?.Invoke(_pressedArgs, e);
@@ -469,6 +492,7 @@ internal class ItemDragHelper
                     if (Math.Abs(diff.X) > horizontalDragThreshold)
                     {
                         _dragStarted = true;
+                        SelectDraggedItemIfNeeded();
                     }
                     else
                     {
@@ -480,6 +504,7 @@ internal class ItemDragHelper
                     if (Math.Abs(diff.Y) > verticalDragThreshold)
                     {
                         _dragStarted = true;
+                        SelectDraggedItemIfNeeded();
                     }
                     else
                     {
@@ -564,6 +589,26 @@ internal class ItemDragHelper
         }
     }
 
+    private void SelectDraggedItemIfNeeded()
+    {
+        if (_itemsControl is not SelectingItemsControl selectingItemsControl || _draggedContainer is null)
+        {
+            return;
+        }
+
+        if (_draggedContainer.DataContext is { } draggedItem && !Equals(selectingItemsControl.SelectedItem, draggedItem))
+        {
+            selectingItemsControl.SelectedItem = draggedItem;
+            return;
+        }
+
+        var draggedIndex = selectingItemsControl.IndexFromContainer(_draggedContainer);
+        if (draggedIndex >= 0 && selectingItemsControl.SelectedIndex != draggedIndex)
+        {
+            selectingItemsControl.SelectedIndex = draggedIndex;
+        }
+    }
+
     private void SetDraggingPseudoClasses(Control control, bool isDragging)
     {
         if (isDragging)
@@ -583,4 +628,3 @@ internal class ItemDragHelper
         control.RenderTransform = transformBuilder.Build();
     }
 }
-

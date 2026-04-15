@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!--<TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>-->
+    <!--<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>-->
     <TargetFrameworks>$(AvaloniaBuildFramework)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
@@ -10,6 +10,7 @@
 
   <PropertyGroup>
     <PackageId>Dock.Serializer.SystemTextJson</PackageId>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddDockSourceGeneratorAnalyzerToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <Import Project="..\..\build\SignAssembly.props" />
@@ -19,6 +20,22 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Dock.Model\Dock.Model.csproj" />
+    <ProjectReference Include="..\Dock.Serializer.SystemTextJson.Generators\Dock.Serializer.SystemTextJson.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained;PublishAot;PublishTrimmed;TrimMode;InvariantGlobalization;StripSymbols"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
+
+  <Target Name="AddDockSourceGeneratorAnalyzerToPackage"
+          Condition="'$(TargetFramework)' == 'net6.0'">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(MSBuildProjectDirectory)\..\Dock.Serializer.SystemTextJson.Generators\bin\$(Configuration)\netstandard2.0\Dock.Serializer.SystemTextJson.Generators.dll"
+                              Condition="Exists('$(MSBuildProjectDirectory)\..\Dock.Serializer.SystemTextJson.Generators\bin\$(Configuration)\netstandard2.0\Dock.Serializer.SystemTextJson.Generators.dll')">
+        <PackagePath>analyzers/dotnet/cs/</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
 
 </Project>

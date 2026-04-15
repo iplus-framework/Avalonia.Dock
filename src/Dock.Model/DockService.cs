@@ -17,6 +17,25 @@ public class DockService : IDockService
         }
     }
 
+    private static void CopyToolDockSettings(IToolDock source, IToolDock target)
+    {
+        target.IsExpanded = source.IsExpanded;
+        target.AutoHide = source.AutoHide;
+        target.GripMode = source.GripMode;
+
+        if (source is IToolDockContent sourceContent && target is IToolDockContent targetContent)
+        {
+            targetContent.ToolTemplate = sourceContent.ToolTemplate;
+        }
+
+        if (source is IToolItemsSourceDock sourceItemsDock && target is IToolItemsSourceDock targetItemsDock)
+        {
+            targetItemsDock.ToolItemContainerTheme = sourceItemsDock.ToolItemContainerTheme;
+            targetItemsDock.ToolItemTemplateSelector = sourceItemsDock.ToolItemTemplateSelector;
+            targetItemsDock.CanUpdateItemsSourceOnUnregister = sourceItemsDock.CanUpdateItemsSourceOnUnregister;
+        }
+    }
+
     private static bool IsValidMove(IDockable sourceDockable, IDock sourceDockableOwner, IDock targetDock, IDockable targetDockable)
     {
         if (targetDockable is IDock)
@@ -158,6 +177,14 @@ public class DockService : IDockService
         targetToolDock.Title = nameof(IToolDock);
         targetToolDock.Alignment = operation.ToAlignment();
         targetToolDock.VisibleDockables = factory.CreateList<IDockable>();
+        if (targetDock is IToolDock targetToolDockSource)
+        {
+            CopyToolDockSettings(targetToolDockSource, targetToolDock);
+        }
+        else if (sourceDockableOwner is IToolDock sourceToolDock)
+        {
+            CopyToolDockSettings(sourceToolDock, targetToolDock);
+        }
         CopyDockGroup(sourceDockable, targetToolDock);
         
         // Local split into a new (empty) dock: allow per Empty Dock Rule
@@ -191,6 +218,20 @@ public class DockService : IDockService
                 && targetDocumentDock is IDocumentDockContent targetDocumentDockContent)
             {
                 targetDocumentDockContent.DocumentTemplate = sourceDocumentDockContent.DocumentTemplate;
+            }
+
+            if (sourceDocumentDock is IItemsSourceDock sourceDocumentItemsDock
+                && targetDocumentDock is IItemsSourceDock targetDocumentItemsDock)
+            {
+                targetDocumentItemsDock.DocumentItemContainerTheme = sourceDocumentItemsDock.DocumentItemContainerTheme;
+                targetDocumentItemsDock.DocumentItemTemplateSelector = sourceDocumentItemsDock.DocumentItemTemplateSelector;
+                targetDocumentItemsDock.CanUpdateItemsSourceOnUnregister = sourceDocumentItemsDock.CanUpdateItemsSourceOnUnregister;
+            }
+
+            if (sourceDocumentDock is IDocumentDockFactory sourceDocumentDockFactory
+                && targetDocumentDock is IDocumentDockFactory targetDocumentDockFactory)
+            {
+                targetDocumentDockFactory.DocumentFactory = sourceDocumentDockFactory.DocumentFactory;
             }
         }
         // Local split into a new (empty) dock: allow per Empty Dock Rule
@@ -257,7 +298,7 @@ public class DockService : IDockService
             return false;
         }
 
-        if (!sourceDockable.CanFloat)
+        if (!DockCapabilityResolver.IsEnabled(sourceDockable, DockCapability.Float, DockCapabilityResolver.ResolveOperationDock(sourceDockable)))
         {
             return false;
         }

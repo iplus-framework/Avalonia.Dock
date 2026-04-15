@@ -4,12 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
+using Dock.Avalonia.Automation.Peers;
 using Dock.Avalonia.Internal;
 using Dock.Model;
 using Dock.Model.Controls;
@@ -22,13 +22,15 @@ namespace Dock.Avalonia.Controls;
 /// Interaction logic for <see cref="HostWindow"/> xaml.
 /// </summary>
 [PseudoClasses(":toolwindow", ":dragging", ":toolchromecontrolswindow", ":documentchromecontrolswindow")]
-[TemplatePart("PART_TitleBar", typeof(HostWindowTitleBar))]
 public class HostWindow : Window, IHostWindow
 {
     private readonly HostWindowState _hostWindowState;
     private List<Control> _chromeGrips = new();
-    private HostWindowTitleBar? _hostWindowTitleBar;
     private bool _mouseDown, _draggingWindow;
+    private double _normalX = double.NaN;
+    private double _normalY = double.NaN;
+    private double _normalWidth = double.NaN;
+    private double _normalHeight = double.NaN;
 
     /// <summary>
     /// Define <see cref="IsToolWindow"/> property.
@@ -81,6 +83,8 @@ public class HostWindow : Window, IHostWindow
     /// <inheritdoc/>
     public IHostWindowState HostWindowState => _hostWindowState;
 
+    internal WindowDragDockScope WindowDragDockScope { get; set; } = WindowDragDockScope.FullWindow;
+
     /// <inheritdoc/>
     public bool IsTracked { get; set; }
 
@@ -91,33 +95,33 @@ public class HostWindow : Window, IHostWindow
     /// Initializes new instance of the <see cref="HostWindow"/> class.
     /// </summary>
     public HostWindow()
+        : this(new DockManagerOptions())
     {
+    }
+
+    /// <summary>
+    /// Initializes new instance of the <see cref="HostWindow"/> class with shared dock manager options.
+    /// </summary>
+    /// <param name="options">Dock manager options to share across windows.</param>
+    public HostWindow(DockManagerOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
         PositionChanged += HostWindow_PositionChanged;
         LayoutUpdated += HostWindow_LayoutUpdated;
         Activated += HostWindow_Activated;
         Deactivated += HostWindow_Deactivated;
-        _hostWindowState = new HostWindowState(new DockManager(new DockService()), this);
+        _hostWindowState = new HostWindowState(new DockManager(new DockService(), options), this);
         UpdatePseudoClasses(IsToolWindow, ToolChromeControlsWholeWindow, DocumentChromeControlsWholeWindow);
     }
 
-    /// <inheritdoc/>
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    /// <inheritdoc />
+    protected override AutomationPeer OnCreateAutomationPeer()
     {
-        base.OnApplyTemplate(e);
-
-        _hostWindowTitleBar = e.NameScope.Find<HostWindowTitleBar>("PART_TitleBar");
-        if (_hostWindowTitleBar is { })
-        {
-            _hostWindowTitleBar.ApplyTemplate();
-
-            if (_hostWindowTitleBar.BackgroundControl is { })
-            {
-                _hostWindowTitleBar.BackgroundControl.PointerPressed += (_, args) =>
-                {
-                    MoveDrag(args);
-                };
-            }
-        }
+        return new HostWindowAutomationPeer(this);
     }
 
     private PixelPoint ClientPointToScreenRelativeToWindow(Point clientPoint)
@@ -128,14 +132,11 @@ public class HostWindow : Window, IHostWindow
         return relativeScreenDiff;
     }
 
-    private void MoveDrag(PointerPressedEventArgs e)
+    private bool TryBeginWindowDrag(PointerPressedEventArgs e, WindowDragDockScope dockScope, bool ownsPointerRelease)
     {
-        if (!ToolChromeControlsWholeWindow)
-            return;
-
         if (Window?.Factory?.OnWindowMoveDragBegin(Window) != true)
         {
-            return;
+            return false;
         }
 
         if (DockSettings.BringWindowsToFrontOnDrag && Window?.Factory is { } factory)
@@ -144,14 +145,15 @@ public class HostWindow : Window, IHostWindow
         }
 
         _mouseDown = true;
+        _draggingWindow = ownsPointerRelease;
+        WindowDragDockScope = dockScope;
         _hostWindowState.Process(ClientPointToScreenRelativeToWindow(e.GetPosition(this)), EventType.Pressed);
 
         PseudoClasses.Set(":dragging", true);
-        _draggingWindow = true;
-        BeginMoveDrag(e);
+        return true;
     }
 
-    private void EndDrag(PointerEventArgs e)
+    private void EndWindowDrag(PointerEventArgs e)
     {
         PseudoClasses.Set(":dragging", false);
 
@@ -159,6 +161,43 @@ public class HostWindow : Window, IHostWindow
         _hostWindowState.Process(ClientPointToScreenRelativeToWindow(e.GetPosition(this)), EventType.Released);
         _mouseDown = false;
         _draggingWindow = false;
+        WindowDragDockScope = WindowDragDockScope.FullWindow;
+    }
+
+    internal bool TryBeginExternalWindowDrag(PointerPressedEventArgs e, WindowDragDockScope dockScope)
+    {
+        return TryBeginWindowDrag(e, dockScope, ownsPointerRelease: false);
+    }
+
+    internal void EndExternalWindowDrag(PointerEventArgs e)
+    {
+        EndWindowDrag(e);
+    }
+
+    internal void CancelExternalWindowDrag()
+    {
+        PseudoClasses.Set(":dragging", false);
+        Window?.Factory?.OnWindowMoveDragEnd(Window);
+        _mouseDown = false;
+        _draggingWindow = false;
+        WindowDragDockScope = WindowDragDockScope.FullWindow;
+    }
+
+    private void MoveDrag(PointerPressedEventArgs e)
+    {
+        if (!ToolChromeControlsWholeWindow)
+            return;
+
+        if (!TryBeginWindowDrag(e, WindowDragDockScope.FullWindow, ownsPointerRelease: true))
+        {
+            return;
+        }
+        BeginMoveDrag(e);
+    }
+
+    private void EndDrag(PointerEventArgs e)
+    {
+        EndWindowDrag(e);
     }
 
     /// <inheritdoc/>
@@ -200,6 +239,7 @@ public class HostWindow : Window, IHostWindow
     {
         if (Window is { } && IsTracked)
         {
+            CaptureNormalBounds();
             Window.Save();
 
             if (_mouseDown)
@@ -253,6 +293,7 @@ public class HostWindow : Window, IHostWindow
     {
         if (Window is { } && IsTracked)
         {
+            CaptureNormalBounds();
             Window.Save();
         }
     }
@@ -296,11 +337,6 @@ public class HostWindow : Window, IHostWindow
             chromeControl.CloseButton.Click += ChromeCloseClick;
         }
 
-        if (chromeControl.Grip is { } grip)
-        {
-            _chromeGrips.Add(grip);
-        }
-
         ((IPseudoClasses)chromeControl.Classes).Add(":floating");
         IsToolWindow = true;
     }
@@ -322,11 +358,6 @@ public class HostWindow : Window, IHostWindow
     /// <param name="chromeControl">The chrome control.</param>
     public void DetachGrip(ToolChromeControl chromeControl)
     {
-        if (chromeControl.Grip is { } grip)
-        {
-            _chromeGrips.Remove(grip);
-        }
-
         if (chromeControl.CloseButton is not null)
         {
             chromeControl.CloseButton.Click -= ChromeCloseClick;
@@ -360,6 +391,10 @@ public class HostWindow : Window, IHostWindow
         else if (change.Property == DocumentChromeControlsWholeWindowProperty)
         {
             UpdatePseudoClasses(IsToolWindow, ToolChromeControlsWholeWindow, change.GetNewValue<bool>());
+        }
+        else if (change.Property == WindowStateProperty && Window is { } && IsTracked)
+        {
+            Window.Save();
         }
     }
 
@@ -446,6 +481,127 @@ public class HostWindow : Window, IHostWindow
         }
     }
 
+    private Window? ResolveOwnerWindow(IDockWindow windowModel, out bool copyOwnerChrome)
+    {
+        copyOwnerChrome = false;
+        var parentWindow = windowModel.ParentWindow;
+        var usesGlobalDefaultMode = windowModel.OwnerMode == DockWindowOwnerMode.Default;
+        var ownerMode = windowModel.OwnerMode == DockWindowOwnerMode.Default
+            ? DockSettings.DefaultFloatingWindowOwnerMode
+            : windowModel.OwnerMode;
+
+        if (ReferenceEquals(parentWindow, windowModel))
+        {
+            parentWindow = null;
+        }
+
+        if (ownerMode == DockWindowOwnerMode.None)
+        {
+            return null;
+        }
+
+        if (usesGlobalDefaultMode && DockSettings.FloatingWindowOwnerPolicy == DockFloatingWindowOwnerPolicy.NeverOwned)
+        {
+            return null;
+        }
+
+        if (ownerMode == DockWindowOwnerMode.ParentWindow
+            || ownerMode == DockWindowOwnerMode.DockableWindow)
+        {
+            if (parentWindow?.Host is Window parentOwnerWindow)
+            {
+                return parentOwnerWindow;
+            }
+
+            if (usesGlobalDefaultMode)
+            {
+                return ResolveFallbackOwnerWindow(windowModel);
+            }
+
+            return null;
+        }
+
+        if (ownerMode == DockWindowOwnerMode.RootWindow)
+        {
+            if (windowModel.Owner is IRootDock root && root.Window is { } rootWindow)
+            {
+                if (!ReferenceEquals(rootWindow, windowModel))
+                {
+                    return rootWindow.Host as Window;
+                }
+            }
+
+            if (windowModel.Factory is { } factory && windowModel.Owner is { } owner)
+            {
+                var ownerRoot = factory.FindRoot(owner);
+                if (ownerRoot?.Window is { } rootDockWindow && !ReferenceEquals(rootDockWindow, windowModel))
+                {
+                    return rootDockWindow.Host as Window;
+                }
+            }
+
+            return null;
+        }
+
+        if (ownerMode == DockWindowOwnerMode.Default && parentWindow?.Host is Window explicitOwner)
+        {
+            return explicitOwner;
+        }
+
+        if (ownerMode == DockWindowOwnerMode.Default && DockSettings.ShouldUseOwnerForFloatingWindows())
+        {
+            var ownerDockControl = windowModel.Layout?.Factory?.DockControls.FirstOrDefault();
+            if (ownerDockControl is Control control && control.GetVisualRoot() is Window visualOwnerWindow)
+            {
+                copyOwnerChrome = true;
+                return visualOwnerWindow;
+            }
+        }
+
+        return null;
+    }
+
+    private Window? ResolveFallbackOwnerWindow(IDockWindow windowModel)
+    {
+        if (windowModel.ParentWindow?.Host is Window explicitOwner)
+        {
+            return explicitOwner;
+        }
+
+        if (windowModel.Owner is IRootDock root && root.Window is { } rootWindow)
+        {
+            if (!ReferenceEquals(rootWindow, windowModel))
+            {
+                return rootWindow.Host as Window;
+            }
+        }
+
+        if (windowModel.Factory is { } factory && windowModel.Owner is { } owner)
+        {
+            var ownerRoot = factory.FindRoot(owner);
+            if (ownerRoot?.Window is { } rootDockWindow && !ReferenceEquals(rootDockWindow, windowModel))
+            {
+                return rootDockWindow.Host as Window;
+            }
+        }
+
+        var ownerDockControl = windowModel.Layout?.Factory?.DockControls.FirstOrDefault();
+        if (ownerDockControl is Control control && control.GetVisualRoot() is Window parentWindow)
+        {
+            return parentWindow;
+        }
+
+        return null;
+    }
+
+    private void ApplyPresentationOptions(IDockWindow windowModel)
+    {
+        if (windowModel.ShowInTaskbar is { } showInTaskbar)
+        {
+            ShowInTaskbar = showInTaskbar;
+        }
+    }
+
     /// <inheritdoc/>
     public void Present(bool isDialog)
     {
@@ -453,29 +609,64 @@ public class HostWindow : Window, IHostWindow
         {
             if (!IsVisible)
             {
-                if (Window is { })
+                if (Window is { } windowModel)
                 {
-                    Window.Factory?.OnWindowOpened(Window);
+                    windowModel.Factory?.OnWindowOpened(windowModel);
+                    ApplyPresentationOptions(windowModel);
                 }
 
-                ShowDialog(null!); // FIXME: Set correct parent window.
+                var ownerWindow = Window is { } modalWindowModel
+                    ? ResolveOwnerWindow(modalWindowModel, out _)
+                    : null;
+
+                if (ownerWindow is null && Window is { } fallbackWindowModel)
+                {
+                    var fallbackOwnerMode = fallbackWindowModel.OwnerMode == DockWindowOwnerMode.Default
+                        ? DockSettings.DefaultFloatingWindowOwnerMode
+                        : fallbackWindowModel.OwnerMode;
+                    var policyDisallowsOwner = fallbackOwnerMode == DockWindowOwnerMode.None
+                                               || DockSettings.FloatingWindowOwnerPolicy == DockFloatingWindowOwnerPolicy.NeverOwned;
+                    if (!policyDisallowsOwner)
+                    {
+                        ownerWindow = ResolveFallbackOwnerWindow(fallbackWindowModel);
+                    }
+                }
+
+                if (ownerWindow is not null)
+                {
+                    ShowDialog(ownerWindow);
+                }
+                else
+                {
+                    DockLogger.LogDebug("Windowing", "Modal window has no owner; presenting non-modally.");
+                    Show();
+                }
             }
         }
         else
         {
             if (!IsVisible)
             {
-                if (Window is { })
+                if (Window is { } windowModel)
                 {
-                    Window.Factory?.OnWindowOpened(Window);
+                    windowModel.Factory?.OnWindowOpened(windowModel);
+                    ApplyPresentationOptions(windowModel);
                 }
 
-                var ownerDockControl = Window?.Layout?.Factory?.DockControls.FirstOrDefault();
-                if (ownerDockControl is Control control && control.GetVisualRoot() is Window parentWindow && DockSettings.UseOwnerForFloatingWindows)
+                var copyOwnerChrome = false;
+                var ownerWindow = Window is { } ownerWindowModel
+                    ? ResolveOwnerWindow(ownerWindowModel, out copyOwnerChrome)
+                    : null;
+
+                if (ownerWindow is not null)
                 {
-                    Title = parentWindow.Title;
-                    Icon = parentWindow.Icon;
-                    Show(parentWindow);
+                    if (copyOwnerChrome)
+                    {
+                        Title = ownerWindow.Title;
+                        Icon = ownerWindow.Icon;
+                    }
+
+                    Show(ownerWindow);
                 }
                 else
                 {
@@ -507,12 +698,21 @@ public class HostWindow : Window, IHostWindow
         if (!double.IsNaN(x) && !double.IsNaN(y))
         {
             Position = new PixelPoint((int)x, (int)y);
+            _normalX = x;
+            _normalY = y;
         }
     }
 
     /// <inheritdoc/>
     public void GetPosition(out double x, out double y)
     {
+        if (WindowState != WindowState.Normal && TryGetNormalBounds(out var normalX, out var normalY, out _, out _))
+        {
+            x = normalX;
+            y = normalY;
+            return;
+        }
+
         x = Position.X;
         y = Position.Y;
     }
@@ -523,19 +723,40 @@ public class HostWindow : Window, IHostWindow
         if (!double.IsNaN(width))
         {
             Width = width;
+            _normalWidth = width;
         }
 
         if (!double.IsNaN(height))
         {
             Height = height;
+            _normalHeight = height;
         }
     }
 
     /// <inheritdoc/>
     public void GetSize(out double width, out double height)
     {
+        if (WindowState != WindowState.Normal && TryGetNormalBounds(out _, out _, out var normalWidth, out var normalHeight))
+        {
+            width = normalWidth;
+            height = normalHeight;
+            return;
+        }
+
         width = Width;
         height = Height;
+    }
+
+    /// <inheritdoc/>
+    public void SetWindowState(DockWindowState windowState)
+    {
+        WindowState = DockWindowStateHelper.ToAvaloniaWindowState(windowState);
+    }
+
+    /// <inheritdoc/>
+    public DockWindowState GetWindowState()
+    {
+        return DockWindowStateHelper.ToDockWindowState(WindowState);
     }
 
     /// <inheritdoc/>
@@ -552,7 +773,53 @@ public class HostWindow : Window, IHostWindow
     /// <inheritdoc/>
     public void SetLayout(IDock layout)
     {
+        SetCurrentValue(IsToolWindowProperty, ResolveHostedDock(layout) is IToolDock);
         DataContext = layout;
+    }
+
+    private static IDock? ResolveHostedDock(IDock layout)
+    {
+        if (layout is IRootDock root)
+        {
+            return root.ActiveDockable as IDock
+                   ?? root.DefaultDockable as IDock
+                   ?? root.VisibleDockables?.OfType<IDock>().FirstOrDefault();
+        }
+
+        return layout;
+    }
+
+    private void CaptureNormalBounds()
+    {
+        if (WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        if (double.IsNaN(Width) || double.IsNaN(Height))
+        {
+            return;
+        }
+
+        _normalX = Position.X;
+        _normalY = Position.Y;
+        _normalWidth = Width;
+        _normalHeight = Height;
+    }
+
+    private bool TryGetNormalBounds(out double x, out double y, out double width, out double height)
+    {
+        x = _normalX;
+        y = _normalY;
+        width = _normalWidth;
+        height = _normalHeight;
+
+        return !double.IsNaN(x)
+               && !double.IsNaN(y)
+               && !double.IsNaN(width)
+               && !double.IsNaN(height)
+               && width > 0
+               && height > 0;
     }
 
     void IHostWindow.SetActive()

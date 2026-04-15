@@ -17,6 +17,7 @@ namespace Dock.Avalonia.Internal;
 internal abstract class DockManagerState : IDockManagerState
 {
     private readonly IDockManager _dockManager;
+    private readonly IGlobalDockingService _globalDockingService;
     private Control? _globalAdornerHost;
 
     protected IDockManager DockManager => _dockManager;
@@ -26,14 +27,18 @@ internal abstract class DockManagerState : IDockManagerState
     protected AdornerHelper<DockTarget> LocalAdornerHelper { get; }
 
     protected AdornerHelper<GlobalDockTarget> GlobalAdornerHelper { get; }
+    
+    protected IGlobalDockingService GlobalDocking => _globalDockingService;
  
     /// <summary>
     /// Initializes a new instance of the <see cref="DockManagerState"/> class.
     /// </summary>
     /// <param name="dockManager">The dock manager.</param>
-    protected DockManagerState(IDockManager dockManager)
+    /// <param name="globalDockingService">Provides global docking resolution and behavior decisions.</param>
+    protected DockManagerState(IDockManager dockManager, IGlobalDockingService? globalDockingService = null)
     {
         _dockManager = dockManager;
+        _globalDockingService = globalDockingService ?? GlobalDockingService.Instance;
         LocalAdornerHelper = new AdornerHelper<DockTarget>(DockSettings.UseFloatingDockAdorner);
         GlobalAdornerHelper = new AdornerHelper<GlobalDockTarget>(DockSettings.UseFloatingDockAdorner);
     }
@@ -41,14 +46,27 @@ internal abstract class DockManagerState : IDockManagerState
     [Conditional("DEBUG")]
     protected static void LogDropRejection(string stage, string message)
     {
-    DockLogger.LogDebug(stage, message);
+        DockLogger.LogDebug(stage, message);
     }
 
     [Conditional("DEBUG")]
     protected static void LogDragState(string message)
     {
-    DockLogger.LogDebug("DragState", message);
+        DockLogger.LogDebug("DragState", message);
     }
+
+    protected string WithCapabilityDiagnostics(string message)
+    {
+        var evaluation = DockManager.LastCapabilityEvaluation;
+        if (evaluation is null)
+        {
+            return message;
+        }
+
+        return $"{message} {evaluation.DiagnosticMessage}";
+    }
+
+    protected IDock? ResolveGlobalTargetDock(Control? dropControl) => _globalDockingService.ResolveGlobalTargetDock(dropControl);
 
     protected void AddAdorners(bool isLocalValid, bool isGlobalValid)
     {
@@ -117,9 +135,9 @@ internal abstract class DockManagerState : IDockManagerState
                 }
             }
             
-            if (dockControl?.Layout?.ActiveDockable is IDock activeDock)
+            var targetDock = ResolveGlobalTargetDock(dropControl);
+            if (dockControl is not null && targetDock is not null)
             {
-                var targetDock = DockHelpers.FindProportionalDock(activeDock) ?? activeDock;
                 // Only show global adorners if the target dock (or any ancestor) has global docking enabled
                 if (DockInheritanceHelper.GetEffectiveEnableGlobalDocking(targetDock))
                 {
@@ -232,6 +250,10 @@ internal abstract class DockManagerState : IDockManagerState
         }
 
         var relativePoint = DockHelpers.GetScreenPoint(relativeTo, point);
+        if (DockHelpers.IsManagedWindowHostingEnabled(relativeTo) && TryGetManagedScreenPosition(relativeTo, point, out var managedPoint))
+        {
+            relativePoint = managedPoint;
+        }
         _dockManager.ScreenPosition = DockHelpers.ToDockPoint(relativePoint);
 
         _dockManager.ValidateDockable(sourceDockable, targetDockable, dragAction, operation, bExecute: true);
@@ -259,6 +281,10 @@ internal abstract class DockManagerState : IDockManagerState
         }
 
         var screenPoint = DockHelpers.GetScreenPoint(relativeTo, point);
+        if (DockHelpers.IsManagedWindowHostingEnabled(relativeTo) && TryGetManagedScreenPosition(relativeTo, point, out var managedPoint))
+        {
+            screenPoint = managedPoint;
+        }
         _dockManager.ScreenPosition = DockHelpers.ToDockPoint(screenPoint);
 
         var isValid = _dockManager.ValidateDockable(sourceDockable, targetDockable, dragAction, operation, bExecute: false);
@@ -266,7 +292,7 @@ internal abstract class DockManagerState : IDockManagerState
         {
             LogDropRejection(
                 nameof(ValidateDockable),
-                $"DockManager rejected operation {operation} from '{sourceDockable.Title}' to '{targetDockable.Title}'.");
+                WithCapabilityDiagnostics($"DockManager rejected operation {operation} from '{sourceDockable.Title}' to '{targetDockable.Title}'."));
         }
 
         return isValid;
@@ -331,10 +357,179 @@ internal abstract class DockManagerState : IDockManagerState
         return defaultValid;
     }
 
-    protected static void Float(Point point, DockControl inputActiveDockControl, IDockable dockable, IFactory factory)
+    protected static void Float(Point point, DockControl inputActiveDockControl, IDockable dockable, IFactory factory, PixelPoint dragOffset)
     {
         var screen = inputActiveDockControl.PointToScreen(point);
-        dockable.SetPointerScreenPosition(screen.X, screen.Y);
+        var adjustedScreen = new PixelPoint(screen.X + dragOffset.X, screen.Y + dragOffset.Y);
+        var pointer = new Point(adjustedScreen.X, adjustedScreen.Y);
+
+        if (DockHelpers.IsManagedWindowHostingEnabled(inputActiveDockControl)
+            && TryGetManagedPointerPosition(inputActiveDockControl, factory, point, dragOffset, out var managedPointer))
+        {
+            pointer = managedPointer;
+        }
+
+        dockable.SetPointerScreenPosition(pointer.X, pointer.Y);
         factory.FloatDockable(dockable);
+    }
+
+    private static bool TryGetManagedPointerPosition(
+        DockControl inputActiveDockControl,
+        IFactory factory,
+        Point point,
+        PixelPoint dragOffset,
+        out Point pointer)
+    {
+        pointer = default;
+
+        if (!TryResolveManagedLayer(inputActiveDockControl, factory, out var layer))
+        {
+            return false;
+        }
+
+        var translated = inputActiveDockControl.TranslatePoint(point, layer);
+        if (translated.HasValue)
+        {
+            var offset = GetDipOffset(inputActiveDockControl, dragOffset);
+            pointer = new Point(translated.Value.X + offset.X, translated.Value.Y + offset.Y);
+
+            if (TryGetManagedContentOffset(inputActiveDockControl, factory, out var contentOffset))
+            {
+                pointer = new Point(pointer.X - contentOffset.X, pointer.Y - contentOffset.Y);
+            }
+
+            return true;
+        }
+
+        if (layer.GetVisualRoot() is not TopLevel topLevel)
+        {
+            return false;
+        }
+
+        var screenPoint = inputActiveDockControl.PointToScreen(point);
+        var adjustedScreen = new PixelPoint(screenPoint.X + dragOffset.X, screenPoint.Y + dragOffset.Y);
+        var clientPoint = topLevel.PointToClient(adjustedScreen);
+        var layerOrigin = layer.TranslatePoint(new Point(0, 0), topLevel) ?? new Point(0, 0);
+        pointer = new Point(clientPoint.X - layerOrigin.X, clientPoint.Y - layerOrigin.Y);
+
+        if (TryGetManagedContentOffset(inputActiveDockControl, factory, out var fallbackOffset))
+        {
+            pointer = new Point(pointer.X - fallbackOffset.X, pointer.Y - fallbackOffset.Y);
+        }
+
+        return true;
+    }
+
+    private static bool TryGetManagedScreenPosition(Visual relativeTo, Point point, out Point managedPoint)
+    {
+        managedPoint = default;
+
+        var dockControl = relativeTo as DockControl ?? relativeTo.FindAncestorOfType<DockControl>();
+        if (dockControl?.Layout?.Factory is not { } factory)
+        {
+            return false;
+        }
+
+        if (!TryResolveManagedLayer(dockControl, factory, out var layer))
+        {
+            return false;
+        }
+
+        var translated = relativeTo.TranslatePoint(point, layer);
+        if (translated.HasValue)
+        {
+            managedPoint = translated.Value;
+            return true;
+        }
+
+        if (layer.GetVisualRoot() is not TopLevel topLevel)
+        {
+            return false;
+        }
+
+        var screenPoint = relativeTo.PointToScreen(point);
+        var clientPoint = topLevel.PointToClient(screenPoint);
+        var layerOrigin = layer.TranslatePoint(new Point(0, 0), topLevel) ?? new Point(0, 0);
+        managedPoint = new Point(clientPoint.X - layerOrigin.X, clientPoint.Y - layerOrigin.Y);
+        return true;
+    }
+
+    private static bool TryResolveManagedLayer(DockControl context, IFactory factory, out ManagedWindowLayer layer)
+    {
+        layer = null!;
+        var contextRoot = context.GetVisualRoot();
+
+        var resolved = ManagedWindowLayer.TryGetLayer(context);
+        if (IsLayerReady(resolved) && IsLayerInRoot(resolved, contextRoot))
+        {
+            layer = resolved!;
+            return true;
+        }
+
+        var registered = ManagedWindowRegistry.TryGetLayer(factory);
+        if (IsLayerReady(registered) && IsLayerInRoot(registered, contextRoot))
+        {
+            layer = registered!;
+            return true;
+        }
+
+        foreach (var dockControl in factory.DockControls.OfType<DockControl>())
+        {
+            var candidate = dockControl.GetVisualDescendants().OfType<ManagedWindowLayer>().FirstOrDefault();
+            if (IsLayerReady(candidate) && IsLayerInRoot(candidate, contextRoot))
+            {
+                layer = candidate!;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetManagedContentOffset(DockControl context, IFactory factory, out Point offset)
+    {
+        offset = default;
+
+        if (context.FindAncestorOfType<MdiDocumentWindow>() is { } window
+            && window.TryGetContentOffset(out offset))
+        {
+            return true;
+        }
+
+        if (!TryResolveManagedLayer(context, factory, out var layer))
+        {
+            return false;
+        }
+
+        return layer.TryGetWindowContentOffset(out offset);
+    }
+
+    private static Point GetDipOffset(Visual visual, PixelPoint dragOffset)
+    {
+        var scaling = (visual.GetVisualRoot() as TopLevel)
+            ?.Screens
+            ?.ScreenFromVisual(visual)
+            ?.Scaling ?? 1.0;
+        return new Point(dragOffset.X / scaling, dragOffset.Y / scaling);
+    }
+
+    private static bool IsLayerReady(ManagedWindowLayer? layer)
+    {
+        return layer is { IsVisible: true } && layer.GetVisualRoot() is not null;
+    }
+
+    private static bool IsLayerInRoot(ManagedWindowLayer? layer, object? contextRoot)
+    {
+        if (layer is null)
+        {
+            return false;
+        }
+
+        if (contextRoot is null)
+        {
+            return true;
+        }
+
+        return ReferenceEquals(layer.GetVisualRoot(), contextRoot);
     }
 }

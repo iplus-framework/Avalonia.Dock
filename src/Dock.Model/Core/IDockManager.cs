@@ -25,6 +25,17 @@ public interface IDockManager
     bool PreventSizeConflicts { get; set; }
 
     /// <summary>
+    /// Gets or sets whether docking interactions are enabled.
+    /// </summary>
+    bool IsDockingEnabled { get; set; }
+
+    /// <summary>
+    /// Gets the last capability evaluation that blocked a docking-related action.
+    /// Returns null when the last validation did not fail due to capability policy.
+    /// </summary>
+    DockCapabilityEvaluation? LastCapabilityEvaluation { get; }
+
+    /// <summary>
     /// Validates tool docking operation.
     /// </summary>
     /// <param name="sourceTool">The source tool.</param>

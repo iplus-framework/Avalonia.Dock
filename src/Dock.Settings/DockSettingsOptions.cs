@@ -1,6 +1,9 @@
 // Copyright (c) Wiesław Šoltés. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
+using Avalonia.Input;
+using Dock.Model.Core;
+
 namespace Dock.Settings;
 
 /// <summary>
@@ -29,9 +32,29 @@ public class DockSettingsOptions
     public bool? UsePinnedDockWindow { get; set; }
 
     /// <summary>
+    /// Optional managed window hosting flag.
+    /// </summary>
+    public bool? UseManagedWindows { get; set; }
+
+    /// <summary>
+    /// Optional floating window host mode.
+    /// </summary>
+    public DockFloatingWindowHostMode? FloatingWindowHostMode { get; set; }
+
+    /// <summary>
     /// Optional floating window owner flag.
     /// </summary>
     public bool? UseOwnerForFloatingWindows { get; set; }
+
+    /// <summary>
+    /// Optional floating window owner policy.
+    /// </summary>
+    public DockFloatingWindowOwnerPolicy? FloatingWindowOwnerPolicy { get; set; }
+
+    /// <summary>
+    /// Optional default floating window owner mode.
+    /// </summary>
+    public DockWindowOwnerMode? DefaultFloatingWindowOwnerMode { get; set; }
 
     /// <summary>
     /// Optional window magnetism flag.
@@ -47,6 +70,49 @@ public class DockSettingsOptions
     /// Optional bring windows to front on drag flag.
     /// </summary>
     public bool? BringWindowsToFrontOnDrag { get; set; }
+
+    /// <summary>
+    /// Optional close floating windows when main window closes flag.
+    /// </summary>
+    public bool? CloseFloatingWindowsOnMainWindowClose { get; set; }
+
+    /// <summary>
+    /// Optional dockable drag preview flag.
+    /// </summary>
+    public bool? ShowDockablePreviewOnDrag { get; set; }
+
+    /// <summary>
+    /// Optional drag preview opacity.
+    /// </summary>
+    public double? DragPreviewOpacity { get; set; }
+
+    /// <summary>
+    /// Optional ItemsSource unregister update flag.
+    /// </summary>
+    public bool? UpdateItemsSourceOnUnregister { get; set; }
+
+    /// <summary>
+    /// Optional selector enabled flag.
+    /// </summary>
+    public bool? SelectorEnabled { get; set; }
+
+    /// <summary>
+    /// Optional document selector key gesture.
+    /// </summary>
+    public KeyGesture? DocumentSelectorKeyGesture { get; set; }
+
+    /// <summary>
+    /// Optional tool selector key gesture.
+    /// </summary>
+    public KeyGesture? ToolSelectorKeyGesture { get; set; }
+
+    /// <summary>
+    /// Optional command bar merging enabled flag.
+    /// </summary>
+    public bool? CommandBarMergingEnabled { get; set; }
+
+    /// <summary>
+    /// Optional command bar merging scope.
+    /// </summary>
+    public DockCommandBarMergingScope? CommandBarMergingScope { get; set; }
 }
-
-

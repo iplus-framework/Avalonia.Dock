@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
-    <!--<TargetFramework>net9.0</TargetFramework>-->
+    <!--<TargetFramework>net10.0</TargetFramework>-->
     <TargetFramework>$(AvaloniaBuildFramework)</TargetFramework>
     <OutputType>Library</OutputType>
     <IsPackable>False</IsPackable>
@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\Dock.Serializer.Yaml\Dock.Serializer.Yaml.csproj" />
     <ProjectReference Include="..\..\src\Dock.Serializer.Xml\Dock.Serializer.Xml.csproj" />
     <ProjectReference Include="..\..\src\Dock.Serializer.Protobuf\Dock.Serializer.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Dock.Model.Inpc\Dock.Model.Inpc.csproj" />
   </ItemGroup>
 
   <ItemGroup>

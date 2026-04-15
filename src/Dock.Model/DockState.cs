@@ -14,6 +14,7 @@ public class DockState : IDockState
     private readonly Dictionary<string, object?> _toolContents;
     private readonly Dictionary<string, object?> _documentContents;
     private readonly Dictionary<string, IDocumentTemplate?> _documentTemplates;
+    private readonly Dictionary<string, IToolTemplate?> _toolTemplates;
 
     /// <summary>
     /// 
@@ -23,6 +24,7 @@ public class DockState : IDockState
         _toolContents = new Dictionary<string, object?>();
         _documentContents = new Dictionary<string, object?>();
         _documentTemplates = new Dictionary<string, IDocumentTemplate?>();
+        _toolTemplates = new Dictionary<string, IToolTemplate?>();
     }
 
     /// <inheritdoc/>
@@ -55,10 +57,20 @@ public class DockState : IDockState
                 SaveDockables(rootDock.BottomPinnedDockables);
             }
 
+            if (rootDock.PinnedDock is { } pinnedDock)
+            {
+                Save(pinnedDock);
+            }
+
             if (rootDock.Windows is { })
             {
                 SaveWindows(rootDock.Windows);
             }
+        }
+
+        if (dock is ISplitViewDock splitViewDock)
+        {
+            SaveSplitViewDockables(splitViewDock);
         }
 
         if (dock.VisibleDockables is { })
@@ -97,10 +109,20 @@ public class DockState : IDockState
                 RestoreDockables(rootDock.BottomPinnedDockables);
             }
 
+            if (rootDock.PinnedDock is { } pinnedDock)
+            {
+                Restore(pinnedDock);
+            }
+
             if (rootDock.Windows is { })
             {
                 RestoreWindows(rootDock.Windows);
             }
+        }
+
+        if (dock is ISplitViewDock splitViewDock)
+        {
+            RestoreSplitViewDockables(splitViewDock);
         }
 
         if (dock.VisibleDockables is { })
@@ -144,6 +166,36 @@ public class DockState : IDockState
         }
     }
 
+    private void SaveSplitViewDockables(ISplitViewDock splitViewDock)
+    {
+        var dock = (IDock)splitViewDock;
+        SaveSplitViewDockable(dock, splitViewDock.PaneDockable);
+        if (!ReferenceEquals(splitViewDock.ContentDockable, splitViewDock.PaneDockable))
+        {
+            SaveSplitViewDockable(dock, splitViewDock.ContentDockable);
+        }
+    }
+
+    private void SaveSplitViewDockable(IDock ownerDock, IDockable? dockable)
+    {
+        if (dockable is null)
+        {
+            return;
+        }
+
+        if (ownerDock.VisibleDockables?.Contains(dockable) == true)
+        {
+            return;
+        }
+
+        SaveDockable(dockable);
+
+        if (dockable is IDock childDock)
+        {
+            Save(childDock);
+        }
+    }
+
     private void RestoreDockables(IList<IDockable> dockables)
     {
         foreach (var dockable in dockables)
@@ -157,6 +209,36 @@ public class DockState : IDockState
         }
     }
 
+    private void RestoreSplitViewDockables(ISplitViewDock splitViewDock)
+    {
+        var dock = (IDock)splitViewDock;
+        RestoreSplitViewDockable(dock, splitViewDock.PaneDockable);
+        if (!ReferenceEquals(splitViewDock.ContentDockable, splitViewDock.PaneDockable))
+        {
+            RestoreSplitViewDockable(dock, splitViewDock.ContentDockable);
+        }
+    }
+
+    private void RestoreSplitViewDockable(IDock ownerDock, IDockable? dockable)
+    {
+        if (dockable is null)
+        {
+            return;
+        }
+
+        if (ownerDock.VisibleDockables?.Contains(dockable) == true)
+        {
+            return;
+        }
+
+        RestoreDockable(dockable);
+
+        if (dockable is IDock childDock)
+        {
+            Restore(childDock);
+        }
+    }
+
     private void SaveDockable(IDockable dockable)
     {
         switch (dockable)
@@ -167,6 +249,16 @@ public class DockState : IDockState
                 if (!string.IsNullOrEmpty(id))
                 {
                     _toolContents[id] = tool.Content;
+                }
+
+                break;
+            }
+            case IToolDockContent toolDock:
+            {
+                var id = toolDock.Id;
+                if (!string.IsNullOrEmpty(id))
+                {
+                    _toolTemplates[id] = toolDock.ToolTemplate;
                 }
 
                 break;
@@ -200,12 +292,38 @@ public class DockState : IDockState
         {
             case IToolContent tool:
             {
+                var haveContent = false;
                 var id = tool.Id;
                 if (!string.IsNullOrEmpty(id))
                 {
                     if (_toolContents.TryGetValue(id, out var content))
                     {
                         tool.Content = content;
+                        haveContent = true;
+                    }
+                }
+
+                if (haveContent == false)
+                {
+                    if (tool.Owner is IToolDockContent toolDock)
+                    {
+                        if (toolDock.ToolTemplate is { })
+                        {
+                            tool.Content = toolDock.ToolTemplate.Content;
+                        }
+                    }
+                }
+
+                break;
+            }
+            case IToolDockContent toolDock:
+            {
+                var id = toolDock.Id;
+                if (!string.IsNullOrEmpty(id))
+                {
+                    if (_toolTemplates.TryGetValue(id, out var content))
+                    {
+                        toolDock.ToolTemplate = content;
                     }
                 }
 
@@ -259,5 +377,6 @@ public class DockState : IDockState
         _toolContents.Clear();
         _documentContents.Clear();
         _documentTemplates.Clear();
+        _toolTemplates.Clear();
     }
 }

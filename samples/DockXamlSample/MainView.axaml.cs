@@ -25,6 +25,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        InitializeView();
         InitializeDockState();
     }
 
@@ -42,9 +43,8 @@ public partial class MainView : UserControl
         }
     }
 
-    private void InitializeComponent()
+    private void InitializeView()
     {
-        AvaloniaXamlLoader.Load(this);
         _viewsMenu = ViewsMenu;
         _rootDock = DockControl?.Layout as IRootDock;
 
@@ -64,7 +64,7 @@ public partial class MainView : UserControl
             return;
         }
 
-        var storageProvider = (this.GetVisualRoot() as TopLevel)?.StorageProvider;
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {
             return;
@@ -114,7 +114,7 @@ public partial class MainView : UserControl
             return;
         }
 
-        var storageProvider = (this.GetVisualRoot() as TopLevel)?.StorageProvider;
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {
             return;
@@ -212,4 +212,3 @@ public partial class MainView : UserControl
         }
     }
 }
-

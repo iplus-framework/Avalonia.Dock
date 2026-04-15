@@ -61,6 +61,11 @@ public interface IDockable : IControlRecyclingIdProvider
     DockMode Dock { get; set; }
 
     /// <summary>
+    /// Gets or sets the current logical docking window state.
+    /// </summary>
+    DockingWindowState DockingState { get; set; }
+
+    /// <summary>
     /// Gets or sets grid column.
     /// </summary>
     int Column { get; set; }
@@ -121,6 +126,22 @@ public interface IDockable : IControlRecyclingIdProvider
     bool CanPin { get; set; }
 
     /// <summary>
+    /// Gets or sets whether a pinned dockable stays visible when previewed.
+    /// </summary>
+    bool KeepPinnedDockableVisible { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional pinned dock display mode override.
+    /// When null, the root display mode is used.
+    /// </summary>
+    PinnedDockDisplayMode? PinnedDockDisplayModeOverride { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stored bounds for pinned previews.
+    /// </summary>
+    DockRect? PinnedBounds { get; set; }
+
+    /// <summary>
     /// Gets or sets if the dockable can be floated.
     /// </summary>
     bool CanFloat { get; set; }
@@ -134,6 +155,17 @@ public interface IDockable : IControlRecyclingIdProvider
     /// Gets or sets if the dockable can be dropped on.
     /// </summary>
     bool CanDrop { get; set; }
+
+    /// <summary>
+    /// Gets or sets if the dockable can be docked as a document.
+    /// </summary>
+    bool CanDockAsDocument { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional per-dockable capability overrides.
+    /// Null values inherit root and dock policy values.
+    /// </summary>
+    DockCapabilityOverrides? DockCapabilityOverrides { get; set; }
 
     /// <summary>
     /// Gets or sets whether the dockable has unsaved changes.

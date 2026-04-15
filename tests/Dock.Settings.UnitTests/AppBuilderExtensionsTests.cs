@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
+using Dock.Model.Core;
 using Dock.Settings;
 using Xunit;
 
@@ -15,23 +16,59 @@ public class AppBuilderExtensionsTests
     public void WithDockSettings_Applies_Options()
     {
         var builder = CreateBuilder();
+        var originalMinimumH = DockSettings.MinimumHorizontalDragDistance;
+        var originalMinimumV = DockSettings.MinimumVerticalDragDistance;
+        var originalFloatingDockAdorner = DockSettings.UseFloatingDockAdorner;
+        var originalPinnedDockWindow = DockSettings.UsePinnedDockWindow;
+        var originalOwnerForFloating = DockSettings.UseOwnerForFloatingWindows;
+        var originalHostMode = DockSettings.FloatingWindowHostMode;
+        var originalOwnerPolicy = DockSettings.FloatingWindowOwnerPolicy;
+        var originalDefaultOwnerMode = DockSettings.DefaultFloatingWindowOwnerMode;
+        var originalCloseFloatingOnMainWindowClose = DockSettings.CloseFloatingWindowsOnMainWindowClose;
+        var originalUpdateItemsSourceOnUnregister = DockSettings.UpdateItemsSourceOnUnregister;
         var options = new DockSettingsOptions
         {
             MinimumHorizontalDragDistance = 10,
             MinimumVerticalDragDistance = 12,
             UseFloatingDockAdorner = true,
             UsePinnedDockWindow = true,
-            UseOwnerForFloatingWindows = false
+            UseOwnerForFloatingWindows = false,
+            FloatingWindowHostMode = DockFloatingWindowHostMode.Managed,
+            FloatingWindowOwnerPolicy = DockFloatingWindowOwnerPolicy.NeverOwned,
+            DefaultFloatingWindowOwnerMode = DockWindowOwnerMode.RootWindow,
+            CloseFloatingWindowsOnMainWindowClose = true,
+            UpdateItemsSourceOnUnregister = false
         };
 
-        var result = builder.WithDockSettings(options);
+        try
+        {
+            var result = builder.WithDockSettings(options);
 
-        Assert.Same(builder, result);
-        Assert.Equal(10, DockSettings.MinimumHorizontalDragDistance);
-        Assert.Equal(12, DockSettings.MinimumVerticalDragDistance);
-        Assert.True(DockSettings.UseFloatingDockAdorner);
-        Assert.True(DockSettings.UsePinnedDockWindow);
-        Assert.False(DockSettings.UseOwnerForFloatingWindows);
+            Assert.Same(builder, result);
+            Assert.Equal(10, DockSettings.MinimumHorizontalDragDistance);
+            Assert.Equal(12, DockSettings.MinimumVerticalDragDistance);
+            Assert.True(DockSettings.UseFloatingDockAdorner);
+            Assert.True(DockSettings.UsePinnedDockWindow);
+            Assert.False(DockSettings.UseOwnerForFloatingWindows);
+            Assert.Equal(DockFloatingWindowHostMode.Managed, DockSettings.FloatingWindowHostMode);
+            Assert.Equal(DockFloatingWindowOwnerPolicy.NeverOwned, DockSettings.FloatingWindowOwnerPolicy);
+            Assert.Equal(DockWindowOwnerMode.RootWindow, DockSettings.DefaultFloatingWindowOwnerMode);
+            Assert.True(DockSettings.CloseFloatingWindowsOnMainWindowClose);
+            Assert.False(DockSettings.UpdateItemsSourceOnUnregister);
+        }
+        finally
+        {
+            DockSettings.MinimumHorizontalDragDistance = originalMinimumH;
+            DockSettings.MinimumVerticalDragDistance = originalMinimumV;
+            DockSettings.UseFloatingDockAdorner = originalFloatingDockAdorner;
+            DockSettings.UsePinnedDockWindow = originalPinnedDockWindow;
+            DockSettings.UseOwnerForFloatingWindows = originalOwnerForFloating;
+            DockSettings.FloatingWindowHostMode = originalHostMode;
+            DockSettings.FloatingWindowOwnerPolicy = originalOwnerPolicy;
+            DockSettings.DefaultFloatingWindowOwnerMode = originalDefaultOwnerMode;
+            DockSettings.CloseFloatingWindowsOnMainWindowClose = originalCloseFloatingOnMainWindowClose;
+            DockSettings.UpdateItemsSourceOnUnregister = originalUpdateItemsSourceOnUnregister;
+        }
     }
 
     [Fact]
@@ -58,14 +95,45 @@ public class AppBuilderExtensionsTests
     public void Extension_Methods_Set_Flags()
     {
         var builder = CreateBuilder();
+        var originalFloatingDockAdorner = DockSettings.UseFloatingDockAdorner;
+        var originalPinnedDockWindow = DockSettings.UsePinnedDockWindow;
+        var originalOwnerForFloating = DockSettings.UseOwnerForFloatingWindows;
+        var originalHostMode = DockSettings.FloatingWindowHostMode;
+        var originalOwnerPolicy = DockSettings.FloatingWindowOwnerPolicy;
+        var originalDefaultOwnerMode = DockSettings.DefaultFloatingWindowOwnerMode;
+        var originalCloseFloatingOnMainWindowClose = DockSettings.CloseFloatingWindowsOnMainWindowClose;
+        var originalUpdateItemsSourceOnUnregister = DockSettings.UpdateItemsSourceOnUnregister;
 
-        builder.UseFloatingDockAdorner(true)
-               .UsePinnedDockWindow(true)
-               .UseOwnerForFloatingWindows(false);
+        try
+        {
+            builder.UseFloatingDockAdorner(true)
+                   .UsePinnedDockWindow(true)
+                   .UseOwnerForFloatingWindows(false)
+                   .UseFloatingWindowHostMode(DockFloatingWindowHostMode.Native)
+                   .UseFloatingWindowOwnerPolicy(DockFloatingWindowOwnerPolicy.AlwaysOwned)
+                   .UseDefaultFloatingWindowOwnerMode(DockWindowOwnerMode.ParentWindow)
+                   .CloseFloatingWindowsOnMainWindowClose(true)
+                   .UpdateItemsSourceOnUnregister(false);
 
-        Assert.True(DockSettings.UseFloatingDockAdorner);
-        Assert.True(DockSettings.UsePinnedDockWindow);
-        Assert.False(DockSettings.UseOwnerForFloatingWindows);
+            Assert.True(DockSettings.UseFloatingDockAdorner);
+            Assert.True(DockSettings.UsePinnedDockWindow);
+            Assert.False(DockSettings.UseOwnerForFloatingWindows);
+            Assert.Equal(DockFloatingWindowHostMode.Native, DockSettings.FloatingWindowHostMode);
+            Assert.Equal(DockFloatingWindowOwnerPolicy.AlwaysOwned, DockSettings.FloatingWindowOwnerPolicy);
+            Assert.Equal(DockWindowOwnerMode.ParentWindow, DockSettings.DefaultFloatingWindowOwnerMode);
+            Assert.True(DockSettings.CloseFloatingWindowsOnMainWindowClose);
+            Assert.False(DockSettings.UpdateItemsSourceOnUnregister);
+        }
+        finally
+        {
+            DockSettings.UseFloatingDockAdorner = originalFloatingDockAdorner;
+            DockSettings.UsePinnedDockWindow = originalPinnedDockWindow;
+            DockSettings.UseOwnerForFloatingWindows = originalOwnerForFloating;
+            DockSettings.FloatingWindowHostMode = originalHostMode;
+            DockSettings.FloatingWindowOwnerPolicy = originalOwnerPolicy;
+            DockSettings.DefaultFloatingWindowOwnerMode = originalDefaultOwnerMode;
+            DockSettings.CloseFloatingWindowsOnMainWindowClose = originalCloseFloatingOnMainWindowClose;
+            DockSettings.UpdateItemsSourceOnUnregister = originalUpdateItemsSourceOnUnregister;
+        }
     }
 }
-

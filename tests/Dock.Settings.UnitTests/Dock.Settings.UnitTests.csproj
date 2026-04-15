@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
 
   <PropertyGroup>
-    <!--<TargetFramework>net9.0</TargetFramework>-->
+    <!--<TargetFramework>net10.0</TargetFramework>-->
     <TargetFramework>$(AvaloniaBuildFramework)</TargetFramework>
     <OutputType>Library</OutputType>
     <IsPackable>False</IsPackable>
@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dock.Settings\Dock.Settings.csproj" />
+    <ProjectReference Include="..\..\src\Dock.Model.Avalonia\Dock.Model.Avalonia.csproj" />
   </ItemGroup>
 
   <ItemGroup>

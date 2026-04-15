@@ -17,7 +17,6 @@ namespace Dock.Model.Avalonia.Controls;
 /// <summary>
 /// Root dock.
 /// </summary>
-[DataContract(IsReference = true)]
 public class RootDock : DockBase, IRootDock
 {
     /// <summary>
@@ -54,6 +53,14 @@ public class RootDock : DockBase, IRootDock
         AvaloniaProperty.RegisterDirect<RootDock, IToolDock?>(
             nameof(PinnedDock), o => o.PinnedDock,
             (o, v) => o.PinnedDock = v);
+
+    /// <summary>
+    /// Defines the <see cref="PinnedDockDisplayMode"/> property.
+    /// </summary>
+    public static readonly DirectProperty<RootDock, PinnedDockDisplayMode> PinnedDockDisplayModeProperty =
+        AvaloniaProperty.RegisterDirect<RootDock, PinnedDockDisplayMode>(
+            nameof(PinnedDockDisplayMode), o => o.PinnedDockDisplayMode,
+            (o, v) => o.PinnedDockDisplayMode = v);
 
     /// <summary>
     /// Defines the <see cref="RightPinnedDockables"/> property.
@@ -97,6 +104,27 @@ public class RootDock : DockBase, IRootDock
             o => o.Windows, 
             (o, v) => o.Windows = v);
 
+    /// <summary>
+    /// Defines the <see cref="FloatingWindowHostMode"/> property.
+    /// </summary>
+    public static readonly DirectProperty<RootDock, DockFloatingWindowHostMode> FloatingWindowHostModeProperty =
+        AvaloniaProperty.RegisterDirect<RootDock, DockFloatingWindowHostMode>(
+            nameof(FloatingWindowHostMode),
+            o => o.FloatingWindowHostMode,
+            (o, v) => o.FloatingWindowHostMode = v);
+
+    /// <summary>
+    /// Defines the <see cref="RootDockCapabilityPolicy"/> property.
+    /// </summary>
+    public static readonly DirectProperty<RootDock, DockCapabilityPolicy?> RootDockCapabilityPolicyProperty =
+        AvaloniaProperty.RegisterDirect<RootDock, DockCapabilityPolicy?>(
+            nameof(RootDockCapabilityPolicy),
+            o => o.RootDockCapabilityPolicy,
+            (o, v) => o.RootDockCapabilityPolicy = v);
+
+    /// <summary>
+    /// Defines the <see cref="EnableAdaptiveGlobalDockTargets"/> property.
+    /// </summary>
     public static readonly DirectProperty<RootDock, bool> EnableAdaptiveGlobalDockTargetsProperty =
         AvaloniaProperty.RegisterDirect<RootDock, bool>(
             nameof(EnableAdaptiveGlobalDockTargets), o => o.EnableAdaptiveGlobalDockTargets,
@@ -109,8 +137,11 @@ public class RootDock : DockBase, IRootDock
     private IList<IDockable>? _topPinnedDockables;
     private IList<IDockable>? _bottomPinnedDockables;
     private IToolDock? _pinnedDock;
+    private PinnedDockDisplayMode _pinnedDockDisplayMode = PinnedDockDisplayMode.Overlay;
     private IDockWindow? _window;
     private IList<IDockWindow>? _windows;
+    private DockFloatingWindowHostMode _floatingWindowHostMode;
+    private DockCapabilityPolicy? _rootDockCapabilityPolicy;
     private bool _enableAdaptiveGlobalDockTargets;
 
     /// <summary>
@@ -125,6 +156,7 @@ public class RootDock : DockBase, IRootDock
         _topPinnedDockables = new AvaloniaList<IDockable>();
         _bottomPinnedDockables = new AvaloniaList<IDockable>();
         _windows = new AvaloniaList<IDockWindow>();
+        _floatingWindowHostMode = DockFloatingWindowHostMode.Default;
         ShowWindows = Command.Create(() => _navigateAdapter.ShowWindows());
         ExitWindows = Command.Create(() => _navigateAdapter.ExitWindows());
     }
@@ -163,6 +195,15 @@ public class RootDock : DockBase, IRootDock
     {
         get => _pinnedDock;
         set => SetAndRaise(PinnedDockProperty, ref _pinnedDock, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("PinnedDockDisplayMode")]
+    public PinnedDockDisplayMode PinnedDockDisplayMode
+    {
+        get => _pinnedDockDisplayMode;
+        set => SetAndRaise(PinnedDockDisplayModeProperty, ref _pinnedDockDisplayMode, value);
     }
 
     /// <inheritdoc/>
@@ -212,6 +253,24 @@ public class RootDock : DockBase, IRootDock
     }
 
     /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("FloatingWindowHostMode")]
+    public DockFloatingWindowHostMode FloatingWindowHostMode
+    {
+        get => _floatingWindowHostMode;
+        set => SetAndRaise(FloatingWindowHostModeProperty, ref _floatingWindowHostMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("RootDockCapabilityPolicy")]
+    public DockCapabilityPolicy? RootDockCapabilityPolicy
+    {
+        get => _rootDockCapabilityPolicy;
+        set => SetAndRaise(RootDockCapabilityPolicyProperty, ref _rootDockCapabilityPolicy, value);
+    }
+
+    /// <inheritdoc/>
     [IgnoreDataMember]
     [JsonIgnore]
     public ICommand ShowWindows { get; }
@@ -222,6 +281,9 @@ public class RootDock : DockBase, IRootDock
     public ICommand ExitWindows { get; }
     
     /// <inheritdoc/>
+    /// <summary>
+    /// Gets or sets whether global dock targets should adaptively appear only when available.
+    /// </summary>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
     [JsonPropertyName("EnableAdaptiveGlobalDockTargets")]
     public bool EnableAdaptiveGlobalDockTargets

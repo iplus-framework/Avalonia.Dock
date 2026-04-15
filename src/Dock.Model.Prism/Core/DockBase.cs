@@ -12,7 +12,6 @@ namespace Dock.Model.Prism.Core;
 /// <summary>
 /// Dock base class.
 /// </summary>
-[DataContract(IsReference = true)]
 public abstract class DockBase : DockableBase, IDock
 {
     internal readonly INavigateAdapter _navigateAdapter;
@@ -23,6 +22,7 @@ public abstract class DockBase : DockableBase, IDock
     private int _openedDockablesCount = 0;
     private bool _isActive;
     private bool _canCloseLastDockable = true;
+    private DockCapabilityPolicy? _dockCapabilityPolicy;
     private bool _enableGlobalDocking = true;
 
     /// <summary>
@@ -101,6 +101,14 @@ public abstract class DockBase : DockableBase, IDock
     {
         get => _canCloseLastDockable;
         set => SetProperty(ref _canCloseLastDockable, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DockCapabilityPolicy? DockCapabilityPolicy
+    {
+        get => _dockCapabilityPolicy;
+        set => SetProperty(ref _dockCapabilityPolicy, value);
     }
 
     /// <inheritdoc/>

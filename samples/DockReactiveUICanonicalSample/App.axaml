@@ -1,0 +1,68 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:DockReactiveUICanonicalSample"
+             xmlns:controls="clr-namespace:Dock.Model.Controls;assembly=Dock.Model"
+             xmlns:rxui="clr-namespace:ReactiveUI.Avalonia;assembly=ReactiveUI.Avalonia"
+             x:Class="DockReactiveUICanonicalSample.App">
+  <Application.DataTemplates>
+    <DataTemplate DataType="TextPromptDialogViewModel">
+      <TextPromptDialogView />
+    </DataTemplate>
+    <DataTemplate DataType="MessageDialogViewModel">
+      <MessageDialogView />
+    </DataTemplate>
+  </Application.DataTemplates>
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <DockFluentTheme />
+    <Style Selector="DockControl">
+      <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{StaticResource ControlRecyclingKey}" />
+    </Style>
+    <Styles>
+      <Styles.Resources>
+        <ResourceDictionary>
+          <ResourceDictionary.MergedDictionaries>
+          </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+      </Styles.Resources>
+    </Styles>
+    <Style Selector="HostWindow" x:DataType="controls:IRootDock">
+      <Setter Property="Content" Value="{Binding}" />
+      <Setter Property="ContentTemplate">
+        <DataTemplate x:DataType="controls:IRootDock">
+          <Panel Margin="{Binding $parent[HostWindow].OffScreenMargin}">
+            <Panel Margin="{Binding $parent[HostWindow].WindowDecorationMargin}">
+              <OverlayHost VisualTreeLifecycleBehavior.IsEnabled="True">
+                <DockControl Layout="{Binding}">
+                </DockControl>
+              </OverlayHost>
+            </Panel>
+          </Panel>
+        </DataTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="HostWindow:toolwindow" x:DataType="controls:IRootDock">
+      <Setter Property="Content" Value="{Binding}" />
+      <Setter Property="ContentTemplate">
+        <DataTemplate x:DataType="controls:IRootDock">
+          <Panel Margin="{Binding $parent[HostWindow].OffScreenMargin}">
+            <OverlayHost VisualTreeLifecycleBehavior.IsEnabled="True">
+              <DockControl Layout="{Binding}">
+              </DockControl>
+            </OverlayHost>
+          </Panel>
+        </DataTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="HostWindow:toolchromecontrolswindow">
+      <Setter Property="ExtendClientAreaToDecorationsHint" Value="False" />
+    </Style>
+  </Application.Styles>
+</Application>

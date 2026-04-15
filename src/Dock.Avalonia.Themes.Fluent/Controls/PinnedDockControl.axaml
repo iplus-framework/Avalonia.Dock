@@ -19,14 +19,15 @@
     <Setter Property="(DockProperties.IsDropEnabled)" Value="{Binding CanDrop}" />
     <Setter Property="(DockProperties.DockGroup)" Value="{Binding DockGroup}" />
 
-    <Setter Property="PinnedDockAlignment" Value="{Binding PinnedDock.Alignment, FallbackValue={x:Static core:Alignment.Unset}}" />
+    <Setter Property="PinnedDockAlignment" Value="{Binding PinnedDock?.Alignment, TargetNullValue={x:Static core:Alignment.Unset}, FallbackValue={x:Static core:Alignment.Unset}}" />
+    <Setter Property="PinnedDockDisplayMode" Value="{Binding PinnedDockDisplayMode, FallbackValue={x:Static core:PinnedDockDisplayMode.Overlay}}" />
 
     <Setter Property="Template">
       <ControlTemplate>
         <Grid Name="PART_PinnedDockGrid"
-              IsVisible="{Binding !PinnedDock.IsEmpty, FallbackValue={x:False}}">
-          <ContentControl Content="{Binding PinnedDock}" Name="PART_PinnedDock">
-            <ContentControl.Styles>
+              IsVisible="{Binding !!PinnedDock?.VisibleDockables?.Count, TargetNullValue={x:False}, FallbackValue={x:False}}">
+          <DeferredContentControl Content="{Binding PinnedDock}" Name="PART_PinnedDock">
+            <DeferredContentControl.Styles>
               <Style Selector="ToolDockControl">
                 <Setter Property="Background">
                   <MultiBinding Converter="{x:Static EitherNotNullConverter.Instance}">
@@ -38,8 +39,8 @@
               <Style Selector="ToolControl">
                 <Setter Property="IsHitTestVisible" Value="{Binding !$parent[DockControl].IsDraggingDock}" />
               </Style>
-            </ContentControl.Styles>
-          </ContentControl>
+            </DeferredContentControl.Styles>
+          </DeferredContentControl>
           <GridSplitter Name="PART_PinnedDockSplitter"
                         Grid.Column="1" Grid.Row="1"
                         Background="{Binding $parent[Window].Background, TargetNullValue={x:Static Brushes.Transparent}}" />

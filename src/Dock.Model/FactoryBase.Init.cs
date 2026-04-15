@@ -67,17 +67,21 @@ public abstract partial class FactoryBase
         }
  
         dockable.Owner = owner;
+        dockable.Factory = this;
 
         if (dockable is IDock dock)
         {
-            dock.Factory = this;
-
             if (dock.VisibleDockables is not null)
             {
                 InitDockables(dockable, dock.VisibleDockables);
             }
 
             UpdateIsEmpty(dock);
+        }
+
+        if (dockable is ISplitViewDock splitViewDock)
+        {
+            InitSplitViewDockables(splitViewDock);
         }
 
         if (dockable is IRootDock rootDock)
@@ -89,22 +93,27 @@ public abstract partial class FactoryBase
 
             if (rootDock.LeftPinnedDockables is not null)
             {
-                InitPinnedDockables(rootDock.LeftPinnedDockables);
+                InitPinnedDockables(rootDock, rootDock.LeftPinnedDockables);
             }
 
             if (rootDock.RightPinnedDockables is not null)
             {
-                InitPinnedDockables(rootDock.RightPinnedDockables);
+                InitPinnedDockables(rootDock, rootDock.RightPinnedDockables);
             }
 
             if (rootDock.TopPinnedDockables is not null)
             {
-                InitPinnedDockables(rootDock.TopPinnedDockables);
+                InitPinnedDockables(rootDock, rootDock.TopPinnedDockables);
             }
 
             if (rootDock.BottomPinnedDockables is not null)
             {
-                InitPinnedDockables(rootDock.BottomPinnedDockables);
+                InitPinnedDockables(rootDock, rootDock.BottomPinnedDockables);
+            }
+
+            if (rootDock.PinnedDock is not null)
+            {
+                InitDockable(rootDock.PinnedDock, rootDock);
             }
 
             if (rootDock.Windows is not null)
@@ -115,6 +124,8 @@ public abstract partial class FactoryBase
                 }
             }
         }
+
+        UpdateDockingWindowState(dockable);
 
         OnDockableInit(dockable);
     }
@@ -164,11 +175,33 @@ public abstract partial class FactoryBase
         }
     }
 
-    private void InitPinnedDockables(IList<IDockable> dockables)
+    private void InitSplitViewDockables(ISplitViewDock splitViewDock)
+    {
+        var dock = (IDock)splitViewDock;
+        var paneDockable = splitViewDock.PaneDockable;
+        if (paneDockable is not null && dock.VisibleDockables?.Contains(paneDockable) != true)
+        {
+            InitDockable(paneDockable, splitViewDock);
+        }
+
+        var contentDockable = splitViewDock.ContentDockable;
+        if (contentDockable is not null &&
+            !ReferenceEquals(contentDockable, paneDockable) &&
+            dock.VisibleDockables?.Contains(contentDockable) != true)
+        {
+            InitDockable(contentDockable, splitViewDock);
+        }
+    }
+
+    private void InitPinnedDockables(IRootDock root, IList<IDockable> dockables)
     {
         foreach (var child in dockables)
         {
-            InitDockable(child, child.Owner);
+            // For pinned dockables provided at layout creation time, ensure they are owned by the root.
+            // This establishes a valid owner chain required by preview/restore logic without implying
+            // any previous (unpinned) location.
+            InitDockable(child, root);
+            // Do not assign OriginalOwner here; if a tool is previewed, preview logic will manage it.
         }
     }
 
@@ -211,7 +244,9 @@ public abstract partial class FactoryBase
         if (dockable is { })
         {
             SetFocusedDockable(owner, dockable);
-        } 
+        }
+
+        SynchronizeDockingWindowSelection(owner);
     }
 
     /// <inheritdoc/>
@@ -248,47 +283,80 @@ public abstract partial class FactoryBase
     /// <inheritdoc />
     public virtual void SetFocusedDockable(IDock dock, IDockable? dockable)
     {
-        if (dock.ActiveDockable is not null && FindRoot(dock.ActiveDockable, x => x.IsFocusableRoot) is { } root)
+        if (FindRoot(dock, x => x.IsFocusableRoot) is not { } root)
         {
-            if (dockable is not null)
-            {
-                var results = Find(x => x is IRootDock);
+            return;
+        }
 
-                foreach (var result in results)
+        var previousFocused = root.FocusedDockable;
+
+        if (dockable is not null)
+        {
+            var results = Find(x => x is IRootDock);
+
+            foreach (var result in results)
+            {
+                if (result is IRootDock rootDock 
+                    && rootDock.IsFocusableRoot
+                    && rootDock != root)
                 {
-                    if (result is IRootDock rootDock 
-                        && rootDock.IsFocusableRoot
-                        && rootDock != root)
+                    if (rootDock.FocusedDockable?.Owner is not null)
                     {
-                        if (rootDock.FocusedDockable?.Owner is not null)
+                        SetIsActive(rootDock.FocusedDockable.Owner, false);
+                        // Trigger deactivation event for the dockable that lost focus
+                        OnDockableDeactivated(rootDock.FocusedDockable);
+                        SynchronizeDockingWindowState(rootDock.FocusedDockable);
+                        if (rootDock.FocusedDockable.Owner is IDock oldRootOwner)
                         {
-                            SetIsActive(rootDock.FocusedDockable.Owner, false);
-                            // Trigger deactivation event for the dockable that lost focus
-                            OnDockableDeactivated(rootDock.FocusedDockable);
+                            SynchronizeDockingWindowSelection(oldRootOwner);
                         }
                     }
                 }
             }
+        }
 
-            if (root.FocusedDockable?.Owner is not null)
-            {
-                SetIsActive(root.FocusedDockable.Owner, false);
-                // Trigger deactivation event for the dockable that lost focus
-                OnDockableDeactivated(root.FocusedDockable);
-            }
+        if (root.FocusedDockable?.Owner is not null)
+        {
+            SetIsActive(root.FocusedDockable.Owner, false);
+            // Trigger deactivation event for the dockable that lost focus
+            OnDockableDeactivated(root.FocusedDockable);
+        }
 
-            if (dockable is not null)
+        if (dockable is not null)
+        {
+            if (root.FocusedDockable != dockable)
             {
-                if (root.FocusedDockable != dockable)
-                {
-                    root.FocusedDockable = dockable;
-                }
-            }
-
-            if (root.FocusedDockable?.Owner is not null)
-            {
-                SetIsActive(root.FocusedDockable.Owner, true);
+                root.FocusedDockable = dockable;
             }
         }
+        else
+        {
+            root.FocusedDockable = null;
+        }
+
+        if (root.FocusedDockable?.Owner is not null)
+        {
+            SetIsActive(root.FocusedDockable.Owner, true);
+        }
+
+        if (previousFocused is not null && !ReferenceEquals(previousFocused, root.FocusedDockable))
+        {
+            SynchronizeDockingWindowState(previousFocused);
+            if (previousFocused.Owner is IDock previousOwnerDock)
+            {
+                SynchronizeDockingWindowSelection(previousOwnerDock);
+            }
+        }
+
+        if (root.FocusedDockable is not null)
+        {
+            SynchronizeDockingWindowState(root.FocusedDockable);
+            if (root.FocusedDockable.Owner is IDock focusedOwnerDock)
+            {
+                SynchronizeDockingWindowSelection(focusedOwnerDock);
+            }
+        }
+
+        SynchronizeDockingWindowSelection(dock);
     }
 }

@@ -12,7 +12,6 @@ namespace Dock.Model.CaliburMicro.Controls;
 /// <summary>
 /// Root dock.
 /// </summary>
-[DataContract(IsReference = true)]
 public class RootDock : DockBase, IRootDock
 {
     private bool _isFocusableRoot = true;
@@ -22,8 +21,11 @@ public class RootDock : DockBase, IRootDock
     private IList<IDockable>? _topPinnedDockables;
     private IList<IDockable>? _bottomPinnedDockables;
     private IToolDock? _pinnedDock;
+    private PinnedDockDisplayMode _pinnedDockDisplayMode = PinnedDockDisplayMode.Overlay;
     private IDockWindow? _window;
     private IList<IDockWindow>? _windows;
+    private DockFloatingWindowHostMode _floatingWindowHostMode = DockFloatingWindowHostMode.Default;
+    private DockCapabilityPolicy? _rootDockCapabilityPolicy;
     private bool _enableAdaptiveGlobalDockTargets;
 
     /// <summary>
@@ -93,6 +95,14 @@ public class RootDock : DockBase, IRootDock
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public PinnedDockDisplayMode PinnedDockDisplayMode
+    {
+        get => _pinnedDockDisplayMode;
+        set => Set(ref _pinnedDockDisplayMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public IDockWindow? Window
     {
         get => _window;
@@ -105,6 +115,22 @@ public class RootDock : DockBase, IRootDock
     {
         get => _windows;
         set => Set(ref _windows, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockFloatingWindowHostMode FloatingWindowHostMode
+    {
+        get => _floatingWindowHostMode;
+        set => Set(ref _floatingWindowHostMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DockCapabilityPolicy? RootDockCapabilityPolicy
+    {
+        get => _rootDockCapabilityPolicy;
+        set => Set(ref _rootDockCapabilityPolicy, value);
     }
 
     /// <inheritdoc/>

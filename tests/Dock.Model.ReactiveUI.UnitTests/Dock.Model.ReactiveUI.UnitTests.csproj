@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
 
   <PropertyGroup>
-    <!--<TargetFramework>net9.0</TargetFramework>-->
+    <!--<TargetFramework>net10.0</TargetFramework>-->
     <TargetFramework>$(AvaloniaBuildFramework)</TargetFramework>
     <OutputType>Library</OutputType>
     <IsPackable>False</IsPackable>
@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dock.Model\Dock.Model.csproj" />
     <ProjectReference Include="..\..\src\Dock.Model.ReactiveUI\Dock.Model.ReactiveUI.csproj" />
+    <ProjectReference Include="..\..\src\Dock.Model.ReactiveUI.Services\Dock.Model.ReactiveUI.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,5 @@
 using Avalonia.Markup.Xaml;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using DockReactiveUIRoutingSample.ViewModels.Documents;
 
 namespace DockReactiveUIRoutingSample.Views.Documents;
@@ -8,6 +8,6 @@ public partial class DocumentEditorView : ReactiveUserControl<DocumentEditorView
 {
     public DocumentEditorView()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 }

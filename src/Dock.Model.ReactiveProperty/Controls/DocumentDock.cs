@@ -14,10 +14,13 @@ namespace Dock.Model.ReactiveProperty.Controls;
 /// Document dock.
 /// </summary>
 [DataContract(IsReference = true)]
-public class DocumentDock : DockBase, IDocumentDock
+public class DocumentDock : DockBase, IDocumentDock, IDocumentDockFactory
 {
+    private object? _emptyContent = "No documents open";
     private bool _canCreateDocument;
     private bool _enableWindowDrag;
+    private DocumentLayoutMode _layoutMode = DocumentLayoutMode.Tabbed;
+    private DocumentCloseButtonShowMode _closeButtonShowMode = DocumentCloseButtonShowMode.Always;
 
     /// <summary>
     /// Initializes new instance of the <see cref="DocumentDock"/> class.
@@ -25,6 +28,10 @@ public class DocumentDock : DockBase, IDocumentDock
     public DocumentDock()
     {
         CreateDocument = new ReactiveCommand().WithSubscribe(_ => CreateNewDocument());
+        CascadeDocuments = new ReactiveCommand().WithSubscribe(_ => CascadeDocumentsExecute());
+        TileDocumentsHorizontal = new ReactiveCommand().WithSubscribe(_ => TileDocumentsHorizontalExecute());
+        TileDocumentsVertical = new ReactiveCommand().WithSubscribe(_ => TileDocumentsVerticalExecute());
+        RestoreDocuments = new ReactiveCommand().WithSubscribe(_ => RestoreDocumentsExecute());
     }
 
     /// <inheritdoc/>
@@ -38,6 +45,22 @@ public class DocumentDock : DockBase, IDocumentDock
     /// <inheritdoc/>
     [IgnoreDataMember]
     public ICommand? CreateDocument { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    public ICommand? CascadeDocuments { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    public ICommand? TileDocumentsHorizontal { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    public ICommand? TileDocumentsVertical { get; set; }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    public ICommand? RestoreDocuments { get; set; }
 
     /// <summary>
     /// Gets or sets factory method used to create new documents.
@@ -57,10 +80,34 @@ public class DocumentDock : DockBase, IDocumentDock
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DocumentLayoutMode LayoutMode
+    {
+        get => _layoutMode;
+        set => SetProperty(ref _layoutMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public DocumentTabLayout TabsLayout
     {
         get => _tabsLayout;
         set => SetProperty(ref _tabsLayout, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DocumentCloseButtonShowMode CloseButtonShowMode
+    {
+        get => _closeButtonShowMode;
+        set => SetProperty(ref _closeButtonShowMode, value);
+    }
+
+    /// <inheritdoc/>
+    [IgnoreDataMember]
+    public object? EmptyContent
+    {
+        get => _emptyContent;
+        set => SetProperty(ref _emptyContent, value);
     }
 
     private void CreateNewDocument()
@@ -70,6 +117,46 @@ public class DocumentDock : DockBase, IDocumentDock
             var document = factory();
             AddDocument(document);
         }
+    }
+
+    private void CascadeDocumentsExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.CascadeDocuments(this);
+    }
+
+    private void TileDocumentsHorizontalExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.TileDocumentsHorizontal(this);
+    }
+
+    private void TileDocumentsVerticalExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.TileDocumentsVertical(this);
+    }
+
+    private void RestoreDocumentsExecute()
+    {
+        if (LayoutMode != DocumentLayoutMode.Mdi)
+        {
+            return;
+        }
+
+        MdiLayoutHelper.RestoreDocuments(this);
     }
 
     /// <summary>

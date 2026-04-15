@@ -19,8 +19,13 @@ public class DockWindow : ReactiveBase, IDockWindow
     private double _y;
     private double _width;
     private double _height;
+    private DockWindowState _windowState;
     private bool _topmost;
     private string _title;
+    private DockWindowOwnerMode _ownerMode;
+    private IDockWindow? _parentWindow;
+    private bool _isModal;
+    private bool? _showInTaskbar;
     private IDockable? _owner;
     private IFactory? _factory;
     private IRootDock? _layout;
@@ -33,6 +38,8 @@ public class DockWindow : ReactiveBase, IDockWindow
     {
         _id = nameof(IDockWindow);
         _title = nameof(IDockWindow);
+        _windowState = DockWindowState.Normal;
+        _ownerMode = DockWindowOwnerMode.Default;
         _hostAdapter = new HostAdapter(this);
     }
 
@@ -45,7 +52,7 @@ public class DockWindow : ReactiveBase, IDockWindow
     }
 
     /// <inheritdoc/>
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double X
     {
         get => _x;
@@ -53,7 +60,7 @@ public class DockWindow : ReactiveBase, IDockWindow
     }
 
     /// <inheritdoc/>
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Y
     {
         get => _y;
@@ -61,7 +68,7 @@ public class DockWindow : ReactiveBase, IDockWindow
     }
 
     /// <inheritdoc/>
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Width
     {
         get => _width;
@@ -69,11 +76,19 @@ public class DockWindow : ReactiveBase, IDockWindow
     }
 
     /// <inheritdoc/>
-    [DataMember(IsRequired = true, EmitDefaultValue = true)]
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public double Height
     {
         get => _height;
         set => SetProperty(ref _height, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockWindowState WindowState
+    {
+        get => _windowState;
+        set => SetProperty(ref _windowState, value);
     }
 
     /// <inheritdoc/>
@@ -90,6 +105,38 @@ public class DockWindow : ReactiveBase, IDockWindow
     {
         get => _title;
         set => SetProperty(ref _title, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public DockWindowOwnerMode OwnerMode
+    {
+        get => _ownerMode;
+        set => SetProperty(ref _ownerMode, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public IDockWindow? ParentWindow
+    {
+        get => _parentWindow;
+        set => SetProperty(ref _parentWindow, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool IsModal
+    {
+        get => _isModal;
+        set => SetProperty(ref _isModal, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public bool? ShowInTaskbar
+    {
+        get => _showInTaskbar;
+        set => SetProperty(ref _showInTaskbar, value);
     }
 
     /// <inheritdoc/>

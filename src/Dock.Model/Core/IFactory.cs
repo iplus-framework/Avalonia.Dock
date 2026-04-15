@@ -62,6 +62,31 @@ public partial interface IFactory
     IList<IHostWindow> HostWindows { get; }
 
     /// <summary>
+    /// Gets current global dock tracking state.
+    /// </summary>
+    GlobalDockTrackingState GlobalDockTrackingState { get; }
+
+    /// <summary>
+    /// Gets currently tracked dockable across all roots/windows.
+    /// </summary>
+    IDockable? CurrentDockable { get; }
+
+    /// <summary>
+    /// Gets currently tracked root dock across all windows.
+    /// </summary>
+    IRootDock? CurrentRootDock { get; }
+
+    /// <summary>
+    /// Gets currently tracked dock window across all roots/windows.
+    /// </summary>
+    IDockWindow? CurrentDockWindow { get; }
+
+    /// <summary>
+    /// Gets currently tracked host window across all roots/windows.
+    /// </summary>
+    IHostWindow? CurrentHostWindow { get; }
+
+    /// <summary>
     /// When true closing a tool hides it instead of removing it.
     /// </summary>
     bool HideToolsOnClose { get; set; }
@@ -171,6 +196,12 @@ public partial interface IFactory
     IDocumentDock CreateDocumentDock();
 
     /// <summary>
+    /// Creates <see cref="ISplitViewDock"/>.
+    /// </summary>
+    /// <returns>The new instance of the <see cref="ISplitViewDock"/> class.</returns>
+    ISplitViewDock CreateSplitViewDock();
+
+    /// <summary>
     /// Creates <see cref="IDockWindow"/>.
     /// </summary>
     /// <returns>The new instance of the <see cref="IDockWindow"/> class.</returns>
@@ -215,6 +246,13 @@ public partial interface IFactory
     /// <typeparam name="T">The dockable return type.</typeparam>
     /// <returns>The located dockable.</returns>
     T? GetDockable<T>(string id) where T: class, IDockable;
+
+    /// <summary>
+    /// Gets the generated dock item container that is currently tracked for the specified source item.
+    /// </summary>
+    /// <param name="item">The source item from a document or tool <c>ItemsSource</c> collection.</param>
+    /// <returns>The tracked generated container, or <c>null</c> when no container is currently tracked for the item.</returns>
+    IDockable? GetContainerFromItem(object item);
 
     /// <summary>
     /// Initialize layout.
@@ -377,6 +415,12 @@ public partial interface IFactory
     void PreviewPinnedDockable(IDockable dockable);
 
     /// <summary>
+    /// Toggles preview for a pinned dockable.
+    /// </summary>
+    /// <param name="dockable">The dockable to toggle.</param>
+    void TogglePreviewPinnedDockable(IDockable dockable);
+
+    /// <summary>
     /// Hides all temporarily shown pinned dockables.
     /// </summary>
     /// <param name="rootDock">The owner of the pinned dockables</param>
@@ -403,10 +447,24 @@ public partial interface IFactory
     void FloatDockable(IDockable dockable);
 
     /// <summary>
+    /// Floats dockable with the specified window options.
+    /// </summary>
+    /// <param name="dockable">The dockable to float.</param>
+    /// <param name="options">The window options.</param>
+    void FloatDockable(IDockable dockable, DockWindowOptions? options);
+
+    /// <summary>
     /// Floats owner dock with all dockables.
     /// </summary>
     /// <param name="dockable">The dockable owner source.</param>
     void FloatAllDockables(IDockable dockable);
+
+    /// <summary>
+    /// Floats owner dock with all dockables using the specified window options.
+    /// </summary>
+    /// <param name="dockable">The dockable owner source.</param>
+    /// <param name="options">The window options.</param>
+    void FloatAllDockables(IDockable dockable, DockWindowOptions? options);
 
     /// <summary>
     /// Docks dockable as tabbed document in the nearest document dock.
@@ -468,6 +526,25 @@ public partial interface IFactory
     /// </summary>
     /// <param name="dockable">The document dock.</param>
     void SetDocumentDockTabsLayoutRight(IDockable dockable);
+
+    /// <summary>
+    /// Sets the layout mode for the specified document dock.
+    /// </summary>
+    /// <param name="dockable">The document dock.</param>
+    /// <param name="layoutMode">The layout mode to set.</param>
+    void SetDocumentDockLayoutMode(IDockable dockable, DocumentLayoutMode layoutMode);
+
+    /// <summary>
+    /// Sets the layout mode to tabbed.
+    /// </summary>
+    /// <param name="dockable">The document dock.</param>
+    void SetDocumentDockLayoutModeTabbed(IDockable dockable);
+
+    /// <summary>
+    /// Sets the layout mode to MDI.
+    /// </summary>
+    /// <param name="dockable">The document dock.</param>
+    void SetDocumentDockLayoutModeMdi(IDockable dockable);
 
     /// <summary>
     /// Hides the dockable and stores it in <see cref="IRootDock.HiddenDockables"/>.
@@ -552,6 +629,14 @@ public partial interface IFactory
     IDockWindow? CreateWindowFrom(IDockable dockable);
 
     /// <summary>
+    /// Creates dock window from source dockable with the specified options.
+    /// </summary>
+    /// <param name="dockable">The dockable to embed into window.</param>
+    /// <param name="options">The window options.</param>
+    /// <returns>The new instance of the <see cref="IDockWindow"/> class.</returns>
+    IDockWindow? CreateWindowFrom(IDockable dockable, DockWindowOptions? options);
+
+    /// <summary>
     /// Splits dock to the <see cref="DockOperation.Window"/> and updates <see cref="IDockable.Owner"/> layout.
     /// </summary>
     /// <param name="dock">The window owner.</param>
@@ -561,6 +646,18 @@ public partial interface IFactory
     /// <param name="width">The window width.</param>
     /// <param name="height">The window height.</param>
     void SplitToWindow(IDock dock, IDockable dockable, double x, double y, double width, double height);
+
+    /// <summary>
+    /// Splits dock to the <see cref="DockOperation.Window"/> and updates <see cref="IDockable.Owner"/> layout with the specified window options.
+    /// </summary>
+    /// <param name="dock">The window owner.</param>
+    /// <param name="dockable">The dockable to add to a split window.</param>
+    /// <param name="x">The window X coordinate.</param>
+    /// <param name="y">The window Y coordinate.</param>
+    /// <param name="width">The window width.</param>
+    /// <param name="height">The window height.</param>
+    /// <param name="options">The window options.</param>
+    void SplitToWindow(IDock dock, IDockable dockable, double x, double y, double width, double height, DockWindowOptions? options);
 
     /// <summary>
     /// Splits document into a new horizontal document dock.

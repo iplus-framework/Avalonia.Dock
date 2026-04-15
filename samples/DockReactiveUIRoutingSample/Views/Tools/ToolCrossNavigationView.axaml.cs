@@ -1,5 +1,5 @@
 using Avalonia.Markup.Xaml;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using DockReactiveUIRoutingSample.ViewModels.Tools;
 
 namespace DockReactiveUIRoutingSample.Views.Tools;
@@ -8,6 +8,6 @@ public partial class ToolCrossNavigationView : ReactiveUserControl<ToolCrossNavi
 {
     public ToolCrossNavigationView()
     {
-        AvaloniaXamlLoader.Load(this);
+        InitializeComponent();
     }
 }

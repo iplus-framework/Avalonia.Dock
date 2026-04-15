@@ -13,7 +13,6 @@ namespace Dock.Model.Avalonia.Core;
 /// <summary>
 /// Dockable base class.
 /// </summary>
-[DataContract(IsReference = true)]
 [JsonPolymorphic]
 [JsonDerivedType(typeof(DockDock), typeDiscriminator: "DockDock")]
 [JsonDerivedType(typeof(Document), typeDiscriminator: "Document")]
@@ -24,7 +23,7 @@ namespace Dock.Model.Avalonia.Core;
 [JsonDerivedType(typeof(Tool), typeDiscriminator: "Tool")]
 [JsonDerivedType(typeof(ToolDock), typeDiscriminator: "ToolDock")]
 [JsonDerivedType(typeof(DockBase), typeDiscriminator: "DockBase")]
-public abstract class DockableBase : ReactiveBase, IDockable
+public abstract class DockableBase : ReactiveBase, IDockable, IDockSelectorInfo, IDockableDockingRestrictions, IDockItemContainerMetadata
 {
     /// <summary>
     /// Defines the <see cref="Id"/> property.
@@ -87,6 +86,12 @@ public abstract class DockableBase : ReactiveBase, IDockable
         AvaloniaProperty.RegisterDirect<DockableBase, DockMode>(nameof(Dock), o => o.Dock, (o, v) => o.Dock = v);
 
     /// <summary>
+    /// Defines the <see cref="DockingState"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, DockingWindowState> DockingStateProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, DockingWindowState>(nameof(DockingState), o => o.DockingState, (o, v) => o.DockingState = v, DockingWindowState.Docked);
+
+    /// <summary>
     /// Defines the <see cref="Column"/> property.
     /// </summary>
     public static readonly DirectProperty<DockableBase, int> ColumnProperty =
@@ -135,6 +140,18 @@ public abstract class DockableBase : ReactiveBase, IDockable
         AvaloniaProperty.RegisterDirect<DockableBase, bool>(nameof(CanPin), o => o.CanPin, (o, v) => o.CanPin = v);
 
     /// <summary>
+    /// Defines the <see cref="KeepPinnedDockableVisible"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, bool> KeepPinnedDockableVisibleProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, bool>(nameof(KeepPinnedDockableVisible), o => o.KeepPinnedDockableVisible, (o, v) => o.KeepPinnedDockableVisible = v);
+
+    /// <summary>
+    /// Defines the <see cref="PinnedDockDisplayModeOverride"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, PinnedDockDisplayMode?> PinnedDockDisplayModeOverrideProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, PinnedDockDisplayMode?>(nameof(PinnedDockDisplayModeOverride), o => o.PinnedDockDisplayModeOverride, (o, v) => o.PinnedDockDisplayModeOverride = v);
+
+    /// <summary>
     /// Defines the <see cref="CanFloat"/> property.
     /// </summary>
     public static readonly DirectProperty<DockableBase, bool> CanFloatProperty =
@@ -153,6 +170,21 @@ public abstract class DockableBase : ReactiveBase, IDockable
         AvaloniaProperty.RegisterDirect<DockableBase, bool>(nameof(CanDrop), o => o.CanDrop, (o, v) => o.CanDrop = v);
 
     /// <summary>
+    /// Defines the <see cref="CanDockAsDocument"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, bool> CanDockAsDocumentProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, bool>(nameof(CanDockAsDocument), o => o.CanDockAsDocument, (o, v) => o.CanDockAsDocument = v);
+
+    /// <summary>
+    /// Defines the <see cref="DockCapabilityOverrides"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, DockCapabilityOverrides?> DockCapabilityOverridesProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, DockCapabilityOverrides?>(
+            nameof(DockCapabilityOverrides),
+            o => o.DockCapabilityOverrides,
+            (o, v) => o.DockCapabilityOverrides = v);
+
+    /// <summary>
     /// Defines the <see cref="IsModified"/> property.
     /// </summary>
     public static readonly DirectProperty<DockableBase, bool> IsModifiedProperty =
@@ -163,6 +195,42 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// </summary>
     public static readonly DirectProperty<DockableBase, string?> DockGroupProperty =
         AvaloniaProperty.RegisterDirect<DockableBase, string?>(nameof(DockGroup), o => o.DockGroup, (o, v) => o.DockGroup = v);
+
+    /// <summary>
+    /// Defines the <see cref="AllowedDockOperations"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, DockOperationMask> AllowedDockOperationsProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, DockOperationMask>(nameof(AllowedDockOperations), o => o.AllowedDockOperations, (o, v) => o.AllowedDockOperations = v, DockOperationMask.All);
+
+    /// <summary>
+    /// Defines the <see cref="AllowedDropOperations"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, DockOperationMask> AllowedDropOperationsProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, DockOperationMask>(nameof(AllowedDropOperations), o => o.AllowedDropOperations, (o, v) => o.AllowedDropOperations = v, DockOperationMask.All);
+
+    /// <summary>
+    /// Defines the <see cref="ShowInSelector"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, bool> ShowInSelectorProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, bool>(nameof(ShowInSelector), o => o.ShowInSelector, (o, v) => o.ShowInSelector = v, true);
+
+    /// <summary>
+    /// Defines the <see cref="SelectorTitle"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, string?> SelectorTitleProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, string?>(nameof(SelectorTitle), o => o.SelectorTitle, (o, v) => o.SelectorTitle = v);
+
+    /// <summary>
+    /// Defines the <see cref="ItemContainerTheme"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, object?> ItemContainerThemeProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, object?>(nameof(ItemContainerTheme), o => o.ItemContainerTheme, (o, v) => o.ItemContainerTheme = v);
+
+    /// <summary>
+    /// Defines the <see cref="ItemTemplateSelector"/> property.
+    /// </summary>
+    public static readonly DirectProperty<DockableBase, object?> ItemTemplateSelectorProperty =
+        AvaloniaProperty.RegisterDirect<DockableBase, object?>(nameof(ItemTemplateSelector), o => o.ItemTemplateSelector, (o, v) => o.ItemTemplateSelector = v);
 
     /// <summary>
     /// Defines the <see cref="MinWidth"/> property.
@@ -188,7 +256,9 @@ public abstract class DockableBase : ReactiveBase, IDockable
     public static readonly DirectProperty<DockableBase, double> MaxHeightProperty =
         AvaloniaProperty.RegisterDirect<DockableBase, double>(nameof(MaxHeight), o => o.MaxHeight, (o, v) => o.MaxHeight = v, double.NaN);
 
-    private readonly TrackingAdapter _trackingAdapter;
+    private TrackingAdapter? _trackingAdapter;
+
+    private TrackingAdapter TrackingAdapter => _trackingAdapter ??= new TrackingAdapter();
     private string _id = string.Empty;
     private string _title = string.Empty;
     private object? _context;
@@ -199,6 +269,7 @@ public abstract class DockableBase : ReactiveBase, IDockable
     private bool _isCollapsable = true;
     private double _proportion = double.NaN;
     private DockMode _dock = DockMode.Center;
+    private DockingWindowState _dockingState = DockingWindowState.Docked;
     private int _column = 0;
     private int _row = 0;
     private int _columnSpan = 1;
@@ -207,15 +278,25 @@ public abstract class DockableBase : ReactiveBase, IDockable
     private double _collapsedProportion = double.NaN;
     private bool _canClose = true;
     private bool _canPin = true;
+    private bool _keepPinnedDockableVisible;
+    private PinnedDockDisplayMode? _pinnedDockDisplayModeOverride;
     private bool _canFloat = true;
     private bool _canDrag = true;
     private bool _canDrop = true;
+    private bool _canDockAsDocument = true;
+    private DockCapabilityOverrides? _dockCapabilityOverrides;
     private double _minWidth = double.NaN;
     private double _maxWidth = double.NaN;
     private double _minHeight = double.NaN;
     private double _maxHeight = double.NaN;
     private bool _isModified;
     private string? _dockGroup;
+    private DockOperationMask _allowedDockOperations = DockOperationMask.All;
+    private DockOperationMask _allowedDropOperations = DockOperationMask.All;
+    private bool _showInSelector = true;
+    private string? _selectorTitle;
+    private object? _itemContainerTheme;
+    private object? _itemTemplateSelector;
 
     /// <summary>
     /// Initializes new instance of the <see cref="DockableBase"/> class.
@@ -315,6 +396,24 @@ public abstract class DockableBase : ReactiveBase, IDockable
     {
         get => _dock;
         set => SetAndRaise(DockProperty, ref _dock, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("DockingState")]
+    public DockingWindowState DockingState
+    {
+        get => _dockingState;
+        set
+        {
+            if (_dockingState == value)
+            {
+                return;
+            }
+
+            SetAndRaise(DockingStateProperty, ref _dockingState, value);
+            NotifyDockingWindowStateChanged(DockingWindowStateProperty.DockingState);
+        }
     }
 
     /// <inheritdoc/>
@@ -427,6 +526,46 @@ public abstract class DockableBase : ReactiveBase, IDockable
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("KeepPinnedDockableVisible")]
+    public bool KeepPinnedDockableVisible
+    {
+        get => _keepPinnedDockableVisible;
+        set => SetAndRaise(KeepPinnedDockableVisibleProperty, ref _keepPinnedDockableVisible, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("PinnedDockDisplayModeOverride")]
+    public PinnedDockDisplayMode? PinnedDockDisplayModeOverride
+    {
+        get => _pinnedDockDisplayModeOverride;
+        set => SetAndRaise(PinnedDockDisplayModeOverrideProperty, ref _pinnedDockDisplayModeOverride, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("PinnedBounds")]
+    public DockRect? PinnedBounds
+    {
+        get
+        {
+            GetPinnedBounds(out var x, out var y, out var width, out var height);
+            return IsPinnedBoundsValid(width, height) ? new DockRect(x, y, width, height) : null;
+        }
+        set
+        {
+            if (value is null)
+            {
+                SetPinnedBounds(double.NaN, double.NaN, double.NaN, double.NaN);
+                return;
+            }
+
+            SetPinnedBounds(value.Value.X, value.Value.Y, value.Value.Width, value.Value.Height);
+        }
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     [JsonPropertyName("CanFloat")]
     public bool CanFloat
     {
@@ -454,6 +593,24 @@ public abstract class DockableBase : ReactiveBase, IDockable
 
     /// <inheritdoc/>
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("CanDockAsDocument")]
+    public bool CanDockAsDocument
+    {
+        get => _canDockAsDocument;
+        set => SetAndRaise(CanDockAsDocumentProperty, ref _canDockAsDocument, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("DockCapabilityOverrides")]
+    public DockCapabilityOverrides? DockCapabilityOverrides
+    {
+        get => _dockCapabilityOverrides;
+        set => SetAndRaise(DockCapabilityOverridesProperty, ref _dockCapabilityOverrides, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     [JsonPropertyName("IsModified")]
     public bool IsModified
     {
@@ -471,12 +628,83 @@ public abstract class DockableBase : ReactiveBase, IDockable
     }
 
     /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("AllowedDockOperations")]
+    public DockOperationMask AllowedDockOperations
+    {
+        get => _allowedDockOperations;
+        set => SetAndRaise(AllowedDockOperationsProperty, ref _allowedDockOperations, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("AllowedDropOperations")]
+    public DockOperationMask AllowedDropOperations
+    {
+        get => _allowedDropOperations;
+        set => SetAndRaise(AllowedDropOperationsProperty, ref _allowedDropOperations, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("ShowInSelector")]
+    public bool ShowInSelector
+    {
+        get => _showInSelector;
+        set => SetAndRaise(ShowInSelectorProperty, ref _showInSelector, value);
+    }
+
+    /// <inheritdoc/>
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    [JsonPropertyName("SelectorTitle")]
+    public string? SelectorTitle
+    {
+        get => _selectorTitle;
+        set => SetAndRaise(SelectorTitleProperty, ref _selectorTitle, value);
+    }
+
+    /// <inheritdoc />
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public object? ItemContainerTheme
+    {
+        get => _itemContainerTheme;
+        set => SetAndRaise(ItemContainerThemeProperty, ref _itemContainerTheme, value);
+    }
+
+    /// <inheritdoc />
+    [IgnoreDataMember]
+    [JsonIgnore]
+    public object? ItemTemplateSelector
+    {
+        get => _itemTemplateSelector;
+        set => SetAndRaise(ItemTemplateSelectorProperty, ref _itemTemplateSelector, value);
+    }
+
+    /// <inheritdoc/>
     public string? GetControlRecyclingId() => _id;
 
     /// <inheritdoc/>
     public virtual bool OnClose()
     {
         return true;
+    }
+
+    /// <summary>
+    /// Notifies factory that a docking-window-state property changed.
+    /// </summary>
+    /// <param name="property">The changed property.</param>
+    protected void NotifyDockingWindowStateChanged(DockingWindowStateProperty property)
+    {
+        if (this is not IDockingWindowState)
+        {
+            return;
+        }
+
+        if (Factory is IDockingWindowStateSync stateSync)
+        {
+            stateSync.OnDockingWindowStatePropertyChanged(this, property);
+        }
     }
 
     /// <inheritdoc/>
@@ -487,13 +715,13 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// <inheritdoc/>
     public void GetVisibleBounds(out double x, out double y, out double width, out double height)
     {
-        _trackingAdapter.GetVisibleBounds(out x, out y, out width, out height);
+        TrackingAdapter.GetVisibleBounds(out x, out y, out width, out height);
     }
 
     /// <inheritdoc/>
     public void SetVisibleBounds(double x, double y, double width, double height)
     {
-        _trackingAdapter.SetVisibleBounds(x, y, width, height);
+        TrackingAdapter.SetVisibleBounds(x, y, width, height);
         OnVisibleBoundsChanged(x, y, width, height);
     }
 
@@ -505,13 +733,13 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// <inheritdoc/>
     public void GetPinnedBounds(out double x, out double y, out double width, out double height)
     {
-        _trackingAdapter.GetPinnedBounds(out x, out y, out width, out height);
+        TrackingAdapter.GetPinnedBounds(out x, out y, out width, out height);
     }
 
     /// <inheritdoc/>
     public void SetPinnedBounds(double x, double y, double width, double height)
     {
-        _trackingAdapter.SetPinnedBounds(x, y, width, height);
+        TrackingAdapter.SetPinnedBounds(x, y, width, height);
         OnPinnedBoundsChanged(x, y, width, height);
     }
 
@@ -523,13 +751,13 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// <inheritdoc/>
     public void GetTabBounds(out double x, out double y, out double width, out double height)
     {
-        _trackingAdapter.GetTabBounds(out x, out y, out width, out height);
+        TrackingAdapter.GetTabBounds(out x, out y, out width, out height);
     }
 
     /// <inheritdoc/>
     public void SetTabBounds(double x, double y, double width, double height)
     {
-        _trackingAdapter.SetTabBounds(x, y, width, height);
+        TrackingAdapter.SetTabBounds(x, y, width, height);
         OnTabBoundsChanged(x, y, width, height);
     }
 
@@ -541,13 +769,13 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// <inheritdoc/>
     public void GetPointerPosition(out double x, out double y)
     {
-        _trackingAdapter.GetPointerPosition(out x, out y);
+        TrackingAdapter.GetPointerPosition(out x, out y);
     }
 
     /// <inheritdoc/>
     public void SetPointerPosition(double x, double y)
     {
-        _trackingAdapter.SetPointerPosition(x, y);
+        TrackingAdapter.SetPointerPosition(x, y);
         OnPointerPositionChanged(x, y);
     }
 
@@ -559,18 +787,24 @@ public abstract class DockableBase : ReactiveBase, IDockable
     /// <inheritdoc/>
     public void GetPointerScreenPosition(out double x, out double y)
     {
-        _trackingAdapter.GetPointerScreenPosition(out x, out y);
+        TrackingAdapter.GetPointerScreenPosition(out x, out y);
     }
 
     /// <inheritdoc/>
     public void SetPointerScreenPosition(double x, double y)
     {
-        _trackingAdapter.SetPointerScreenPosition(x, y);
+        TrackingAdapter.SetPointerScreenPosition(x, y);
         OnPointerScreenPositionChanged(x, y);
     }
 
     /// <inheritdoc/>
     public virtual void OnPointerScreenPositionChanged(double x, double y)
     {
+    }
+
+    private static bool IsPinnedBoundsValid(double width, double height)
+    {
+        return !double.IsNaN(width) && !double.IsNaN(height) &&
+               !double.IsInfinity(width) && !double.IsInfinity(height);
     }
 }
