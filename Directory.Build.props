@@ -2,6 +2,10 @@
   <!-- iPlus settings and overrides -->
   <PropertyGroup>
     <IsAvaloniaUIProject>true</IsAvaloniaUIProject>
+    <IsAvaloniaUIProject Condition="'$(MSBuildProjectName)' == 'Dock.Model'">false</IsAvaloniaUIProject>
+    <IsAvaloniaUIProject Condition="'$(MSBuildProjectName)' == 'Dock.Controls.Recycling.Model'">false</IsAvaloniaUIProject>
+    <IsAvaloniaUIProject Condition="$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Dock.Model.')) and '$(MSBuildProjectName)' != 'Dock.Model.Avalonia'">false</IsAvaloniaUIProject>
+    <IsAvaloniaUIProject Condition="$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Dock.Serializer.'))">false</IsAvaloniaUIProject>
   </PropertyGroup>  
   <Import Project="../iPlus/build/Avalonia.Build.props" />
   <!--<Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="../iPlus/build/AvaloniaBaseBuildServicesInclude.props" />-->

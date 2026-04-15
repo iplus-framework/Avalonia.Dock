@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <IsAvaloniaUIProject>false</IsAvaloniaUIProject>
     <OutputType>Library</OutputType>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
