@@ -1,0 +1,1097 @@
+{
+  "source_base_path": "/home/runner/work/Avalonia.Dock/Avalonia.Dock/docfx",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Conceptual",
+      "source_relative_path": "api/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "api/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/README.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-accessibility.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-accessibility.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-active-document.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-active-document.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-adapters.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-adapters.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-advanced.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-advanced.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-api-scenarios.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-api-scenarios.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-architecture.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-architecture.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-caliburn-micro.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-caliburn-micro.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-capability-policies.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-capability-policies.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-code-only.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-code-only.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-command-bars.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-command-bars.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-complex-layouts.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-complex-layouts.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-content-guide.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-content-guide.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-content-wrapper-pattern.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-content-wrapper-pattern.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-context-locator.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-context-locator.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-context-menus.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-context-menus.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-control-initialization.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-control-initialization.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-control-recycling.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-control-recycling.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-controls-reference.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-controls-reference.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-custom-model.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-custom-model.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-custom-theme.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-custom-theme.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-datatemplates.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-datatemplates.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-debug-overlay.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-debug-overlay.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-debug-views.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-debug-views.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-deep-dive.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-deep-dive.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-deferred-content-sample.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-deferred-content-sample.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-deferred-content.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-deferred-content.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-dependency-injection.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-dependency-injection.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-diagnostics-logging.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-diagnostics-logging.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-dockable-control.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-dockable-control.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-dockable-properties.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-dockable-properties.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-dockablelocator.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-dockablelocator.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-docking-constraints.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-docking-constraints.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-docking-groups.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-docking-groups.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-drag-actions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-drag-actions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-drag-offset-calculator.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-drag-offset-calculator.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-enums.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-enums.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-events.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-events.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-faq.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-faq.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-floating-adorners.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-floating-adorners.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-fluent-extensions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-fluent-extensions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-geometry.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-geometry.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-global-tracking.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-global-tracking.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-glossary.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-glossary.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-host-window-locator.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-host-window-locator.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-inpc.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-inpc.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-itemssource.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-itemssource.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-layout-panels.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-layout-panels.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-managed-windows-guide.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-managed-windows-guide.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-managed-windows-howto.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-managed-windows-howto.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-managed-windows-reference.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-managed-windows-reference.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-manager-guide.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-manager-guide.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-markup-extensions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-markup-extensions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-mdi-layout-helpers.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-mdi-layout-helpers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-mdi.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-mdi.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-model-controls.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-model-controls.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-mvvm.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-mvvm.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-overlay-customization.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-overlay-customization.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-overlay-services-reference.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-overlay-services-reference.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-pinned-window.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-pinned-window.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-prism.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-prism.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-programmatic-docking.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-programmatic-docking.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-properties.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-properties.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-proportional-stackpanel.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-proportional-stackpanel.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-reactive-property.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-reactive-property.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-reactiveui-di.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-reactiveui-di.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-reactiveui-routing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-reactiveui-routing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-reactiveui.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-reactiveui.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-reference.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-reference.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-restore-dockable.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-restore-dockable.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-root-dock-debug.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-root-dock-debug.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-selector-overlay.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-selector-overlay.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-serialization-state.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-serialization-state.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-serialization.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-serialization.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-settings-controls.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-settings-controls.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-settings.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-settings.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-sizing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-sizing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-state.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-state.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-styling.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-styling.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-targets.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-targets.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-browser-sample.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-browser-sample.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-browser.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-browser.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-design-tokens.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-design-tokens.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-fluent.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-fluent.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-ide-presets.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-ide-presets.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-semantic-tokens.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-semantic-tokens.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-simple.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-simple.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-theme-token-migration.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-theme-token-migration.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-tracking-controls.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-tracking-controls.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-user-viewmodel.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-user-viewmodel.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-views.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-views.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-window-creation-overrides.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-window-creation-overrides.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-window-drag.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-window-drag.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-window-owner.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-window-owner.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-windows.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-windows.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-workspaces.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-workspaces.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/dock-xaml.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/dock-xaml.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/pinned-dock-inline-display.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/pinned-dock-inline-display.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/quick-start.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/quick-start.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/windowing/hosting.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/windowing/hosting.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/windowing/overview.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/windowing/overview.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/windowing/ownership.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/windowing/ownership.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/windowing/taskbar-and-modal.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/windowing/taskbar-and-modal.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/logo.svg",
+      "output": {
+        "resource": {
+          "relative_path": "images/logo.svg"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html"
+        },
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}
