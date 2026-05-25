@@ -295,5 +295,9 @@ public class NavigateAdapter : INavigateAdapter
                 rootDock.ExitWindows.Execute(null);
             }
         }
+        if (_dock.Factory != null && _dock.ActiveDockable != null) 
+        {
+            _dock.Factory.CloseDockable(_dock.ActiveDockable);
+        }
     }
 }
