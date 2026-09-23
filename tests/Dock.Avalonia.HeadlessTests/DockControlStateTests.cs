@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Internal;
 using Dock.Model;
@@ -17,6 +18,43 @@ namespace Dock.Avalonia.HeadlessTests;
 
 public class DockControlStateTests
 {
+    private sealed class RecordingDockManager : IDockManager
+    {
+        public DockPoint Position { get; set; }
+        public DockPoint ScreenPosition { get; set; }
+        public bool PreventSizeConflicts { get; set; }
+        public bool IsDockingEnabled { get; set; } = true;
+        public DockCapabilityEvaluation? LastCapabilityEvaluation => null;
+        public IDockable? LastSourceDockable { get; private set; }
+
+        public bool ValidateTool(ITool sourceTool, IDockable targetDockable, DragAction action, DockOperation operation, bool bExecute) => true;
+
+        public bool ValidateDocument(IDocument sourceDocument, IDockable targetDockable, DragAction action, DockOperation operation, bool bExecute) => true;
+
+        public bool ValidateDock(IDock sourceDock, IDockable targetDockable, DragAction action, DockOperation operation, bool bExecute) => true;
+
+        public bool ValidateDockable(IDockable sourceDockable, IDockable targetDockable, DragAction action, DockOperation operation, bool bExecute)
+        {
+            LastSourceDockable = sourceDockable;
+            return true;
+        }
+
+        public bool IsDockTargetVisible(IDockable sourceDockable, IDockable targetDockable, DockOperation operation) => true;
+    }
+
+    private sealed class TestDockControlState : DockControlState
+    {
+        public TestDockControlState(IDockManager dockManager)
+            : base(dockManager, new DefaultDragOffsetCalculator())
+        {
+        }
+
+        public void ExecuteDrop(Visual relativeTo, IDockable sourceDockable, IDockable targetDockable)
+        {
+            Execute(new Point(5, 5), DockOperation.Fill, DragAction.Move, relativeTo, sourceDockable, targetDockable);
+        }
+    }
+
     private sealed class RecordingFactory : Factory
     {
         public int FloatCount { get; private set; }
@@ -63,6 +101,159 @@ public class DockControlStateTests
         state.Process(new Point(), new Vector(), EventType.Released, DragAction.None, dock, docks);
 
         Assert.False(dock.IsDraggingDock);
+    }
+
+    [AvaloniaFact]
+    public void StartDrag_DetachedSource_DoesNotConvertPointToScreen()
+    {
+        var state = CreateState(new DockManager(new DockService()));
+        var dockControl = new DockControl();
+        var dragControl = new Control
+        {
+            DataContext = new Tool { CanDrag = true }
+        };
+        DockProperties.SetIsDragEnabled(dragControl, true);
+
+        state.StartDrag(dragControl, new Point(5, 5), new Point(20, 20), dockControl);
+        state.Process(
+            new Point(30, 30),
+            default,
+            EventType.Moved,
+            DragAction.Move,
+            dockControl,
+            new List<IDockControl> { dockControl });
+
+        Assert.True(dockControl.IsDraggingDock);
+
+        state.Process(
+            default,
+            default,
+            EventType.CaptureLost,
+            DragAction.None,
+            dockControl,
+            new List<IDockControl> { dockControl });
+    }
+
+    [AvaloniaFact]
+    public void Process_ThresholdMove_DetachedSource_DoesNotConvertPointToScreen()
+    {
+        var state = CreateState(new DockManager(new DockService()));
+        var dockControl = new DockControl();
+        var dragControl = new Control
+        {
+            DataContext = new object()
+        };
+        DockProperties.SetIsDragEnabled(dragControl, true);
+        state.StartDrag(dragControl, new Point(0, 0), new Point(0, 0), dockControl);
+        dragControl.DataContext = new Tool { CanDrag = true };
+
+        state.Process(
+            new Point(100, 100),
+            default,
+            EventType.Moved,
+            DragAction.Move,
+            dockControl,
+            new List<IDockControl> { dockControl });
+
+        Assert.True(dockControl.IsDraggingDock);
+
+        state.Process(
+            default,
+            default,
+            EventType.CaptureLost,
+            DragAction.None,
+            dockControl,
+            new List<IDockControl> { dockControl });
+    }
+
+    [AvaloniaFact]
+    public void DetachedSource_TransfersDragCaptureAndReleaseToAttachedDockControl()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        root.Factory = factory;
+        root.VisibleDockables = factory.CreateList<IDockable>();
+        var toolDock = factory.CreateToolDock();
+        toolDock.VisibleDockables = factory.CreateList<IDockable>();
+        var tool = factory.CreateTool();
+        tool.CanDrag = true;
+        factory.AddDockable(toolDock, tool);
+        toolDock.ActiveDockable = tool;
+        factory.AddDockable(root, toolDock);
+
+        var targetDockControl = new DockControl { Layout = root };
+        var sourceDockControl = new DockControl { Layout = root };
+        var dragControl = new Control { DataContext = new object() };
+        DockProperties.SetIsDragEnabled(dragControl, true);
+        var sourceHost = new Grid();
+        sourceHost.Children.Add(sourceDockControl);
+        sourceHost.Children.Add(dragControl);
+        var sourceWindow = new Window
+        {
+            Width = 300,
+            Height = 200,
+            Content = sourceHost
+        };
+        var targetWindow = new Window
+        {
+            Width = 300,
+            Height = 200,
+            Content = targetDockControl
+        };
+        var pointer = new global::Avalonia.Input.Pointer(1, PointerType.Mouse, true);
+
+        try
+        {
+            targetWindow.Show();
+            sourceWindow.Show();
+            targetWindow.UpdateLayout();
+            sourceWindow.UpdateLayout();
+
+            var sourceState = Assert.IsType<DockControlState>(sourceDockControl.DockControlState);
+            sourceState.StartDrag(
+                dragControl,
+                new Point(5, 5),
+                new Point(20, 20),
+                sourceDockControl);
+            dragControl.DataContext = tool;
+
+            sourceHost.Children.Remove(sourceDockControl);
+            sourceWindow.UpdateLayout();
+
+            Assert.True(sourceDockControl.TryTransferDragCapture(pointer));
+            Assert.Same(targetDockControl, pointer.Captured);
+            Assert.False(sourceDockControl.IsDraggingDock);
+            Assert.False(targetDockControl.IsDraggingDock);
+
+            var targetState = Assert.IsType<DockControlState>(targetDockControl.DockControlState);
+            targetState.Process(
+                new Point(100, 100),
+                default,
+                EventType.Moved,
+                DragAction.Move,
+                targetDockControl,
+                factory.DockControls);
+
+            Assert.True(targetDockControl.IsDraggingDock);
+
+            targetState.Process(
+                new Point(30, 30),
+                default,
+                EventType.Released,
+                DragAction.Move,
+                targetDockControl,
+                factory.DockControls);
+
+            Assert.Equal(1, factory.FloatCount);
+            Assert.Same(tool, factory.LastFloatedDockable);
+            Assert.False(targetDockControl.IsDraggingDock);
+        }
+        finally
+        {
+            pointer.Capture(null);
+            sourceWindow.Close();
+            targetWindow.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -136,6 +327,230 @@ public class DockControlStateTests
 
             Assert.Equal(1, factory.FloatCount);
             Assert.Same(sourceDocument, factory.LastFloatedDockable);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Process_Released_OutsideTarget_FloatsActivePinnedToolInsteadOfPreviewDock()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        root.VisibleDockables = factory.CreateList<IDockable>();
+        root.LeftPinnedDockables = factory.CreateList<IDockable>();
+
+        var previewDock = factory.CreateToolDock();
+        previewDock.VisibleDockables = factory.CreateList<IDockable>();
+        var tool = factory.CreateTool();
+        factory.AddDockable(previewDock, tool);
+        previewDock.ActiveDockable = tool;
+        root.PinnedDock = previewDock;
+        root.LeftPinnedDockables.Add(tool);
+        factory.InitDockable(root, null);
+
+        var dockControl = new DockControl
+        {
+            Layout = root
+        };
+        var dragControl = new Control
+        {
+            DataContext = previewDock
+        };
+        DockProperties.SetIsDragEnabled(dragControl, true);
+        var host = new Grid();
+        host.Children.Add(dockControl);
+        host.Children.Add(dragControl);
+        var window = new Window
+        {
+            Width = 300,
+            Height = 200,
+            Content = host
+        };
+
+        try
+        {
+            window.Show();
+            window.UpdateLayout();
+
+            var state = CreateState(new DockManager(new DockService()));
+
+            state.StartDrag(dragControl, new Point(5, 5), new Point(20, 20), dockControl);
+            state.Process(new Point(30, 30), default, EventType.Released, DragAction.Move, dockControl, new List<IDockControl> { dockControl });
+
+            Assert.Equal(1, factory.FloatCount);
+            Assert.Same(tool, factory.LastFloatedDockable);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void DragDockableResolver_PinnedPreviewSelfDrop_IsNoOpTarget()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        var previewDock = factory.CreateToolDock();
+        previewDock.VisibleDockables = factory.CreateList<IDockable>();
+        var tool = factory.CreateTool();
+        factory.AddDockable(previewDock, tool);
+        previewDock.ActiveDockable = tool;
+        root.PinnedDock = previewDock;
+        factory.InitDockable(root, null);
+
+        Assert.Same(tool, DragDockableResolver.Resolve(previewDock));
+        Assert.True(DragDockableResolver.IsSelfDrop(previewDock, previewDock));
+        Assert.True(DragDockableResolver.IsSelfDrop(previewDock, tool));
+        Assert.True(DragDockableResolver.IsNoOpDrop(previewDock, previewDock, DockOperation.Left));
+    }
+
+    [AvaloniaFact]
+    public void DragDockableResolver_RegularToolDock_PreservesWholeDockDrag()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        root.VisibleDockables = factory.CreateList<IDockable>();
+        var toolDock = factory.CreateToolDock();
+        toolDock.VisibleDockables = factory.CreateList<IDockable>();
+        var tool = factory.CreateTool();
+        factory.AddDockable(toolDock, tool);
+        toolDock.ActiveDockable = tool;
+        factory.AddDockable(root, toolDock);
+
+        Assert.Same(toolDock, DragDockableResolver.Resolve(toolDock));
+    }
+
+    [AvaloniaFact]
+    public void DragDockableResolver_RegularDockableOwner_IsNotSelfDrop()
+    {
+        var factory = new RecordingFactory();
+        var documentDock = factory.CreateDocumentDock();
+        documentDock.VisibleDockables = factory.CreateList<IDockable>();
+        var document = factory.CreateDocument();
+        factory.AddDockable(documentDock, document);
+
+        Assert.True(DragDockableResolver.IsSelfDrop(document, document));
+        Assert.False(DragDockableResolver.IsSelfDrop(document, documentDock));
+        Assert.True(DragDockableResolver.IsNoOpDrop(document, document, DockOperation.Fill));
+        Assert.False(DragDockableResolver.IsNoOpDrop(document, document, DockOperation.Left));
+        Assert.False(DragDockableResolver.IsNoOpDrop(document, document, DockOperation.Window));
+    }
+
+    [AvaloniaFact]
+    public void Execute_RegularToolDockChrome_PreservesWholeDockSource()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        root.VisibleDockables = factory.CreateList<IDockable>();
+        var sourceDock = factory.CreateToolDock();
+        sourceDock.VisibleDockables = factory.CreateList<IDockable>();
+        var firstTool = factory.CreateTool();
+        var secondTool = factory.CreateTool();
+        factory.AddDockable(sourceDock, firstTool);
+        factory.AddDockable(sourceDock, secondTool);
+        sourceDock.ActiveDockable = secondTool;
+        factory.AddDockable(root, sourceDock);
+        var targetDock = factory.CreateToolDock();
+
+        var executedSource = ExecuteDrop(sourceDock, targetDock);
+
+        Assert.Same(sourceDock, executedSource);
+    }
+
+    [AvaloniaFact]
+    public void Execute_RegularToolDockChrome_MovesEveryToolIntoTargetDock()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        root.VisibleDockables = factory.CreateList<IDockable>();
+        var sourceDock = factory.CreateToolDock();
+        sourceDock.VisibleDockables = factory.CreateList<IDockable>();
+        var firstTool = factory.CreateTool();
+        var secondTool = factory.CreateTool();
+        factory.AddDockable(sourceDock, firstTool);
+        factory.AddDockable(sourceDock, secondTool);
+        sourceDock.ActiveDockable = secondTool;
+        factory.AddDockable(root, sourceDock);
+        var targetDock = factory.CreateToolDock();
+        targetDock.VisibleDockables = factory.CreateList<IDockable>();
+        var targetTool = factory.CreateTool();
+        factory.AddDockable(targetDock, targetTool);
+        factory.AddDockable(root, targetDock);
+        factory.InitDockable(root, null);
+        var state = new TestDockControlState(new DockManager(new DockService()));
+
+        ExecuteDrop(state, sourceDock, targetDock);
+
+        Assert.Contains(firstTool, targetDock.VisibleDockables!);
+        Assert.Contains(secondTool, targetDock.VisibleDockables!);
+        Assert.DoesNotContain(firstTool, sourceDock.VisibleDockables!);
+        Assert.DoesNotContain(secondTool, sourceDock.VisibleDockables!);
+    }
+
+    [AvaloniaFact]
+    public void Execute_PinnedPreviewChrome_UsesActiveToolSource()
+    {
+        var factory = new RecordingFactory();
+        var root = factory.CreateRootDock();
+        var previewDock = factory.CreateToolDock();
+        previewDock.VisibleDockables = factory.CreateList<IDockable>();
+        var firstTool = factory.CreateTool();
+        var activeTool = factory.CreateTool();
+        factory.AddDockable(previewDock, firstTool);
+        factory.AddDockable(previewDock, activeTool);
+        previewDock.ActiveDockable = activeTool;
+        root.PinnedDock = previewDock;
+        factory.InitDockable(root, null);
+        var targetDock = factory.CreateToolDock();
+
+        var executedSource = ExecuteDrop(previewDock, targetDock);
+
+        Assert.Same(activeTool, executedSource);
+    }
+
+    [AvaloniaFact]
+    public void Execute_IndividualToolTab_PreservesToolSource()
+    {
+        var factory = new RecordingFactory();
+        var sourceDock = factory.CreateToolDock();
+        sourceDock.VisibleDockables = factory.CreateList<IDockable>();
+        var sourceTool = factory.CreateTool();
+        factory.AddDockable(sourceDock, sourceTool);
+        sourceDock.ActiveDockable = sourceTool;
+        var targetDock = factory.CreateToolDock();
+
+        var executedSource = ExecuteDrop(sourceTool, targetDock);
+
+        Assert.Same(sourceTool, executedSource);
+    }
+
+    private static IDockable? ExecuteDrop(IDockable sourceDockable, IDockable targetDockable)
+    {
+        var manager = new RecordingDockManager();
+        var state = new TestDockControlState(manager);
+        ExecuteDrop(state, sourceDockable, targetDockable);
+        return manager.LastSourceDockable;
+    }
+
+    private static void ExecuteDrop(TestDockControlState state, IDockable sourceDockable, IDockable targetDockable)
+    {
+        var relativeTo = new Border();
+        var window = new Window
+        {
+            Width = 300,
+            Height = 200,
+            Content = relativeTo
+        };
+
+        try
+        {
+            window.Show();
+            window.UpdateLayout();
+            state.ExecuteDrop(relativeTo, sourceDockable, targetDockable);
         }
         finally
         {

@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 
@@ -48,6 +50,8 @@ public abstract partial class FactoryBase
                 }
             }
 
+            InitializeGlobalDockTracking(rootDock);
+
             if (rootDock.ShowWindows.CanExecute(null))
             {
                 rootDock.ShowWindows.Execute(null);
@@ -71,10 +75,12 @@ public abstract partial class FactoryBase
 
         if (dockable is IDock dock)
         {
-            if (dock.VisibleDockables is not null)
-            {
-                InitDockables(dockable, dock.VisibleDockables);
-            }
+            // Item controls cache collection state and require change notifications when
+            // FactoryBase mutates a live layout. Normalize user-created layout lists before
+            // they are attached to the UI.
+            var visibleDockables = EnsureObservableList(dock.VisibleDockables);
+            dock.VisibleDockables = visibleDockables;
+            InitDockables(dockable, visibleDockables);
 
             UpdateIsEmpty(dock);
         }
@@ -173,6 +179,32 @@ public abstract partial class FactoryBase
         {
             InitDockable(child, dockable);
         }
+    }
+
+    private IList<T> EnsureObservableList<T>(IList<T>? items)
+    {
+        if (items is INotifyCollectionChanged)
+        {
+            return items;
+        }
+
+        var observableItems = CreateList<T>();
+        if (observableItems is not INotifyCollectionChanged)
+        {
+            observableItems = new ObservableCollection<T>();
+        }
+
+        if (items is null)
+        {
+            return observableItems;
+        }
+
+        foreach (var item in items)
+        {
+            observableItems.Add(item);
+        }
+
+        return observableItems;
     }
 
     private void InitSplitViewDockables(ISplitViewDock splitViewDock)
@@ -289,6 +321,7 @@ public abstract partial class FactoryBase
         }
 
         var previousFocused = root.FocusedDockable;
+        var focusedOwnerWasActive = previousFocused?.Owner is IDock focusedOwner && focusedOwner.IsActive;
 
         if (dockable is not null)
         {
@@ -315,7 +348,8 @@ public abstract partial class FactoryBase
             }
         }
 
-        if (root.FocusedDockable?.Owner is not null)
+        if (!ReferenceEquals(root.FocusedDockable, dockable)
+            && root.FocusedDockable?.Owner is not null)
         {
             SetIsActive(root.FocusedDockable.Owner, false);
             // Trigger deactivation event for the dockable that lost focus
@@ -337,6 +371,13 @@ public abstract partial class FactoryBase
         if (root.FocusedDockable?.Owner is not null)
         {
             SetIsActive(root.FocusedDockable.Owner, true);
+        }
+
+        if (dockable is not null
+            && ReferenceEquals(previousFocused, root.FocusedDockable)
+            && !focusedOwnerWasActive)
+        {
+            OnFocusedDockableChanged(dockable);
         }
 
         if (previousFocused is not null && !ReferenceEquals(previousFocused, root.FocusedDockable))

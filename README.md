@@ -91,12 +91,33 @@ Install-Package Dock.Controls.DeferredContentControl
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI) | [`Dock.Model.ReactiveUI`](https://www.nuget.org/packages/Dock.Model.ReactiveUI) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.Services.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services) | [`Dock.Model.ReactiveUI.Services`](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.Services.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.Services.Avalonia.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia) | [`Dock.Model.ReactiveUI.Services.Avalonia`](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.Services.Avalonia.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia) |
+| [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Reactive) | [`Dock.Model.ReactiveUI.Reactive`](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Reactive) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Reactive) |
+| [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.Services.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Reactive) | [`Dock.Model.ReactiveUI.Services.Reactive`](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Reactive) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.Services.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Reactive) |
+| [![NuGet](https://img.shields.io/nuget/v/Dock.Model.ReactiveUI.Services.Avalonia.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia.Reactive) | [`Dock.Model.ReactiveUI.Services.Avalonia.Reactive`](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia.Reactive) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Model.ReactiveUI.Services.Avalonia.Reactive.svg)](https://www.nuget.org/packages/Dock.Model.ReactiveUI.Services.Avalonia.Reactive) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Serializer.Newtonsoft.svg)](https://www.nuget.org/packages/Dock.Serializer.Newtonsoft) | [`Dock.Serializer.Newtonsoft`](https://www.nuget.org/packages/Dock.Serializer.Newtonsoft) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Serializer.Newtonsoft.svg)](https://www.nuget.org/packages/Dock.Serializer.Newtonsoft) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Serializer.Protobuf.svg)](https://www.nuget.org/packages/Dock.Serializer.Protobuf) | [`Dock.Serializer.Protobuf`](https://www.nuget.org/packages/Dock.Serializer.Protobuf) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Serializer.Protobuf.svg)](https://www.nuget.org/packages/Dock.Serializer.Protobuf) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Serializer.SystemTextJson.svg)](https://www.nuget.org/packages/Dock.Serializer.SystemTextJson) | [`Dock.Serializer.SystemTextJson`](https://www.nuget.org/packages/Dock.Serializer.SystemTextJson) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Serializer.SystemTextJson.svg)](https://www.nuget.org/packages/Dock.Serializer.SystemTextJson) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Serializer.Xml.svg)](https://www.nuget.org/packages/Dock.Serializer.Xml) | [`Dock.Serializer.Xml`](https://www.nuget.org/packages/Dock.Serializer.Xml) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Serializer.Xml.svg)](https://www.nuget.org/packages/Dock.Serializer.Xml) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Serializer.Yaml.svg)](https://www.nuget.org/packages/Dock.Serializer.Yaml) | [`Dock.Serializer.Yaml`](https://www.nuget.org/packages/Dock.Serializer.Yaml) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Serializer.Yaml.svg)](https://www.nuget.org/packages/Dock.Serializer.Yaml) |
 | [![NuGet](https://img.shields.io/nuget/v/Dock.Settings.svg)](https://www.nuget.org/packages/Dock.Settings) | [`Dock.Settings`](https://www.nuget.org/packages/Dock.Settings) | [![Downloads](https://img.shields.io/nuget/dt/Dock.Settings.svg)](https://www.nuget.org/packages/Dock.Settings) |
+
+### Avalonia 11 packages
+
+Applications that remain on Avalonia 11 should use the `.v11` package lane. These packages are source-linked from the current Dock implementation, target Avalonia 11.3.20, and must not be mixed with the unsuffixed Avalonia 12 Dock packages.
+
+```powershell
+Install-Package Dock.Avalonia.v11
+Install-Package Dock.Avalonia.Diagnostics.v11
+Install-Package Dock.Avalonia.Themes.Fluent.v11
+Install-Package Dock.Avalonia.Themes.Browser.v11
+Install-Package Dock.Avalonia.Themes.Simple.v11
+```
+
+The Avalonia 11 ReactiveUI sample can be built with:
+
+```bash
+dotnet build samples/DockReactiveUISample.v11/DockReactiveUISample.v11.csproj -c Release
+```
 
 ## Nightly Packages
 

@@ -23,10 +23,6 @@ internal sealed class DockControlFactoryService : IDockControlFactoryService
         }
 
         var controlRecycling = ControlRecyclingDataTemplate.GetControlRecycling(control);
-        if (controlRecycling is null)
-        {
-            return;
-        }
 
         if (s_controlRecycling.TryGetValue(factory, out var shared))
         {
@@ -35,34 +31,16 @@ internal sealed class DockControlFactoryService : IDockControlFactoryService
                 return;
             }
 
-            if (shared is ControlRecycling sharedRecycling && controlRecycling is ControlRecycling localRecycling)
-            {
-                if (sharedRecycling.TryToUseIdAsKey != localRecycling.TryToUseIdAsKey)
-                {
-                    sharedRecycling.TryToUseIdAsKey = localRecycling.TryToUseIdAsKey;
-                }
-
-                ControlRecyclingDataTemplate.SetControlRecycling(control, sharedRecycling);
-                return;
-            }
-
-            if (controlRecycling is ControlRecycling)
-            {
-                ControlRecyclingDataTemplate.SetControlRecycling(control, shared);
-            }
-
+            ControlRecyclingDataTemplate.SetControlRecycling(control, shared);
             return;
         }
 
-        if (controlRecycling is ControlRecycling defaultRecycling)
+        if (controlRecycling is null)
         {
-            controlRecycling = new ControlRecycling
-            {
-                TryToUseIdAsKey = defaultRecycling.TryToUseIdAsKey
-            };
-            ControlRecyclingDataTemplate.SetControlRecycling(control, controlRecycling);
+            controlRecycling = new ControlRecycling();
         }
 
+        ControlRecyclingDataTemplate.SetControlRecycling(control, controlRecycling);
         s_controlRecycling.Add(factory, controlRecycling);
     }
 

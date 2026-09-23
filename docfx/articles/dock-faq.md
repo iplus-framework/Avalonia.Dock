@@ -8,13 +8,17 @@ This page answers common questions that come up when using Dock.
 
 Use `ItemsSource` on `DocumentDock` and `ToolDock` for automatic source-backed dockable management:
 
+If the dock is declared under `RootDock`, bind `ItemsSource` through a named root such as `RootWindow` so compiled bindings read the window view model instead of the Dock model object.
+
 ```xaml
-<DocumentDock ItemsSource="{Binding Documents}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
       <StackPanel x:DataType="Document">
         <TextBlock Text="{Binding Title}"/>
-        <TextBox Text="{Binding Context.Content}"/>
+        <StackPanel DataContext="{Binding Context}">
+          <TextBox x:DataType="models:FileModel" Text="{Binding Content}"/>
+        </StackPanel>
       </StackPanel>
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
@@ -42,6 +46,19 @@ For the ViewModel + DataTemplate approach, check:
 
 For comprehensive setup guides, see [Document and Tool Content Guide](dock-content-guide.md).
 
+**Why does `FindControl` return null for a control inside `Document` or `Tool`?**
+
+Direct XAML content inside a dockable is compiled as template content and is not
+materialized until Dock presents that dockable. It is not available in the parent
+window's visual tree or name scope immediately after the window's
+`InitializeComponent()` call.
+
+Do not use parent-window code-behind to find and initialize that content. Put the
+integration in a dedicated custom control or attached behavior that owns its own
+attach/detach lifecycle, or use a view model with a compiled `DataTemplate`. This
+also handles tab moves, floating windows, and recycled content correctly. See
+[Direct content lifecycle and renderer controls](dock-content-guide.md#direct-content-lifecycle-and-renderer-controls).
+
 **I get "Unexpected content" errors when adding documents**
 
 This happens when you set a UserControl instance directly to the `Content` property. Use one of these approaches instead:
@@ -60,7 +77,7 @@ Use the `ItemsSource` property to bind your existing domain models directly:
 public class FileModel : INotifyPropertyChanged
 {
     public string Title { get; set; }      // Used for tab title
-    public string Content { get; set; }    // Accessible via Context.Content
+    public string Content { get; set; }    // Accessible through Document.Context
     public bool CanClose { get; set; }     // Controls if tab can be closed
 }
 
@@ -70,10 +87,12 @@ public ObservableCollection<FileModel> OpenFiles { get; } = new();
 
 Then bind in XAML:
 ```xaml
-<DocumentDock ItemsSource="{Binding OpenFiles}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).OpenFiles}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
-      <TextBox x:DataType="Document" Text="{Binding Context.Content}"/>
+      <ContentControl x:DataType="Document" DataContext="{Binding Context}">
+        <TextBox x:DataType="models:FileModel" Text="{Binding Content}"/>
+      </ContentControl>
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
 </DocumentDock>

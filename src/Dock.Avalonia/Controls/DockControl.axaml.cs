@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
@@ -51,12 +52,17 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
     private DockSelectorOverlay? _selectorOverlay;
     private DockSelectorMode _selectorMode;
     private KeyGesture? _selectorGesture;
-    private readonly Dictionary<IDockable, long> _activationOrder = new();
+    private readonly ConditionalWeakTable<IDockable, ActivationOrderEntry> _activationOrder = new();
     private long _activationCounter;
     private IFactory? _subscribedFactory;
     private IFactory? _managedLayerFactory;
     private Window? _attachedWindow;
     private readonly List<WeakReference<IExternalDockSurface>> _externalDockSurfaces = new();
+
+    private sealed class ActivationOrderEntry
+    {
+        public long Value { get; set; }
+    }
 
     /// <summary>
     /// Defines the <see cref="Layout"/> property.
@@ -514,7 +520,10 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
 
         layout.Factory.DockControls.Add(this);
 
-        _factoryService.InitializeControlRecycling(this);
+        if (_contentControl is not null)
+        {
+            _factoryService.InitializeControlRecycling(this);
+        }
         UpdateManagedWindowLayer(layout);
 
         if (InitializeFactory)
@@ -548,7 +557,7 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
         AttachFactoryEvents(layout.Factory);
         if (layout.ActiveDockable is { } activeDockable)
         {
-            _activationOrder[activeDockable] = ++_activationCounter;
+            RecordActivation(activeDockable);
         }
         _commandBarManager?.Attach(layout);
 
@@ -660,7 +669,7 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
             return;
         }
 
-        _activationOrder[e.Dockable] = ++_activationCounter;
+        RecordActivation(e.Dockable);
     }
 
     private void UpdateManagedWindowLayer(IDock? layout)
@@ -933,7 +942,6 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
         var dockables = new List<IDockable>();
         var visited = new HashSet<IDockable>();
         CollectDockables(root, dockables, visited);
-        PruneActivationOrder(dockables);
 
         var items = new List<DockSelectorItem>();
         foreach (var dockable in dockables)
@@ -956,7 +964,9 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
                 continue;
             }
 
-            _activationOrder.TryGetValue(dockable, out var activationOrder);
+            var activationOrder = _activationOrder.TryGetValue(dockable, out var entry)
+                ? entry.Value
+                : 0;
             var dockableRoot = factory.FindRoot(dockable, _ => true) as IRootDock;
             var isFloating = dockableRoot is not null && !ReferenceEquals(dockableRoot, root);
             var isHidden = root.HiddenDockables?.Contains(dockable) == true;
@@ -1039,19 +1049,10 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
         }
     }
 
-    private void PruneActivationOrder(IReadOnlyCollection<IDockable> dockables)
+    private void RecordActivation(IDockable dockable)
     {
-        if (_activationOrder.Count == 0)
-        {
-            return;
-        }
-
-        var current = new HashSet<IDockable>(dockables);
-        var stale = _activationOrder.Keys.Where(key => !current.Contains(key)).ToList();
-        foreach (var key in stale)
-        {
-            _activationOrder.Remove(key);
-        }
+        var entry = _activationOrder.GetValue(dockable, static _ => new ActivationOrderEntry());
+        entry.Value = ++_activationCounter;
     }
 
     private IDockable? ResolveActiveDockable(DockSelectorMode mode)
@@ -1150,6 +1151,8 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
 
             if (windowModel != null)
             {
+                windowModel.Layout = root;
+
                 if (TopLevel.GetTopLevel(this) is IHostWindow window)
                 {
                     root.Factory?.InitDockWindow(windowModel, root, window);
@@ -1160,8 +1163,14 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
         }
 
         RestoreExternalDockSurfaceOwners();
+        AttachMainWindowHandlers(TopLevel.GetTopLevel(this) as Window);
+    }
 
-        AttachMainWindowClosingHandler();
+    /// <inheritdoc/>
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        AttachMainWindowHandlers(TopLevel.GetTopLevel(this) as Window);
     }
 
     /// <inheritdoc/>
@@ -1169,7 +1178,7 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
     {
         base.OnDetachedFromVisualTree(e);
 
-        DetachMainWindowClosingHandler();
+        DetachMainWindowHandlers();
 
         var layout = Layout;
 
@@ -1203,14 +1212,9 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
         root.Factory?.OnWindowClosed(root.Window);
     }
 
-    private void AttachMainWindowClosingHandler()
+    private void AttachMainWindowHandlers(Window? window)
     {
-        if (!DockSettings.CloseFloatingWindowsOnMainWindowClose)
-        {
-            return;
-        }
-
-        if (TopLevel.GetTopLevel(this) is not Window window || window is IHostWindow)
+        if (window is null || window is IHostWindow)
         {
             return;
         }
@@ -1220,20 +1224,36 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
             return;
         }
 
-        DetachMainWindowClosingHandler();
+        DetachMainWindowHandlers();
         _attachedWindow = window;
-        _attachedWindow.Closing += OnMainWindowClosing;
+        _attachedWindow.Activated += OnMainWindowActivated;
+        if (DockSettings.CloseFloatingWindowsOnMainWindowClose)
+        {
+            _attachedWindow.Closing += OnMainWindowClosing;
+        }
     }
 
-    private void DetachMainWindowClosingHandler()
+    private void DetachMainWindowHandlers()
     {
         if (_attachedWindow is null)
         {
             return;
         }
 
+        _attachedWindow.Activated -= OnMainWindowActivated;
         _attachedWindow.Closing -= OnMainWindowClosing;
         _attachedWindow = null;
+    }
+
+    private void OnMainWindowActivated(object? sender, EventArgs e)
+    {
+        if (Layout?.Factory is not { } factory
+            || factory.FindRoot(Layout, _ => true) is not IRootDock root)
+        {
+            return;
+        }
+
+        factory.OnWindowActivated(root.Window, root);
     }
 
     private void OnMainWindowClosing(object? sender, global::Avalonia.Controls.WindowClosingEventArgs e)
@@ -1431,6 +1451,11 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
 
     private void CaptureLostHandler(object? sender, PointerCaptureLostEventArgs e)
     {
+        if (TryTransferDragCapture(e.Pointer))
+        {
+            return;
+        }
+
         if (Layout?.Factory?.DockControls is { })
         {
             var position = new Point();
@@ -1438,6 +1463,37 @@ public class DockControl : TemplatedControl, IDockControl, IDockSelectorService
             var action = DragAction.None;
             _dockControlState.Process(position, delta, EventType.CaptureLost, action, this, Layout.Factory.DockControls);
         }
+    }
+
+    internal bool TryTransferDragCapture(IPointer pointer)
+    {
+        if (this.GetVisualRoot() is not null
+            || !_dockControlState.HasActiveDrag
+            || Layout?.Factory?.DockControls is not { } dockControls)
+        {
+            return false;
+        }
+
+        foreach (var dockControl in DockHelpers.GetZOrderedDockControls(dockControls))
+        {
+            if (dockControl is not DockControl targetDockControl
+                || ReferenceEquals(targetDockControl, this)
+                || targetDockControl.GetVisualRoot() is null
+                || targetDockControl.DockControlState is not DockControlState targetState)
+            {
+                continue;
+            }
+
+            if (!_dockControlState.TryTransferDragTo(targetState, this, targetDockControl))
+            {
+                continue;
+            }
+
+            pointer.Capture(targetDockControl);
+            return true;
+        }
+
+        return false;
     }
 
     private void WheelChangedHandler(object? sender, PointerWheelEventArgs e)

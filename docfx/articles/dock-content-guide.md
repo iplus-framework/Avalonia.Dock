@@ -157,7 +157,9 @@ public class MainViewModel : INotifyPropertyChanged
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:YourApp"
-             x:Class="YourApp.ItemsSourceExample">
+             x:Class="YourApp.ItemsSourceExample"
+             x:Name="RootView"
+             x:DataType="local:MainViewModel">
 
   <UserControl.DataContext>
     <local:MainViewModel />
@@ -178,8 +180,8 @@ public class MainViewModel : INotifyPropertyChanged
 
       <RootDock Id="Root" IsCollapsable="False">
         <DocumentDock Id="DocumentsPane" 
-                      CanCreateDocument="True"
-                      ItemsSource="{Binding Documents}">
+                      CanCreateDocument="False"
+                      ItemsSource="{Binding #RootView.((local:MainViewModel)DataContext).Documents}">
           
           <!-- Define how each document should be displayed -->
           <DocumentDock.DocumentTemplate>
@@ -187,8 +189,12 @@ public class MainViewModel : INotifyPropertyChanged
               <StackPanel Margin="10" x:DataType="Document">
                 <TextBlock Text="Document Title:" FontWeight="Bold"/>
                 <TextBox Text="{Binding Title}" Margin="0,0,0,10"/>
-                <TextBlock Text="Content:" FontWeight="Bold"/>
-                <TextBox Text="{Binding Context.Content}" AcceptsReturn="True" Height="200" TextWrapping="Wrap"/>
+                <StackPanel DataContext="{Binding Context}">
+                  <StackPanel x:DataType="local:MyDocumentModel">
+                    <TextBlock Text="Content:" FontWeight="Bold"/>
+                    <TextBox Text="{Binding Content}" AcceptsReturn="True" Height="200" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </StackPanel>
               </StackPanel>
             </DocumentTemplate>
           </DocumentDock.DocumentTemplate>
@@ -203,7 +209,9 @@ public class MainViewModel : INotifyPropertyChanged
 ### Step 4: Bind to ToolDock in XAML
 
 ```xaml
-<ToolDock Id="ToolsPane" Alignment="Left" ItemsSource="{Binding Tools}">
+<ToolDock Id="ToolsPane"
+          Alignment="Left"
+          ItemsSource="{Binding #RootView.((local:MainViewModel)DataContext).Tools}">
   <ToolDock.ToolTemplate>
     <ToolTemplate>
       <StackPanel Margin="10" x:DataType="Tool">
@@ -229,7 +237,7 @@ public class MainViewModel : INotifyPropertyChanged
    - `Name` → Alternative for title
    - `DisplayName` → Alternative for title  
    - `CanClose` → Whether the document can be closed
-6. **Data Context**: Your model object becomes the `Context` of the created `Document`/`Tool` and is accessible via `{Binding Context.PropertyName}`
+6. **Data Context**: Your model object becomes the `Context` of the created `Document`/`Tool`; for compiled bindings, rebind a subtree to `Context` and set `x:DataType` to the model type.
 
 ### Advanced Examples
 
@@ -250,17 +258,19 @@ public class FileModel
 #### With Commands and Interactions
 
 ```xaml
-<DocumentDock ItemsSource="{Binding OpenFiles}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).OpenFiles}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
-      <Grid RowDefinitions="Auto,*,Auto" x:DataType="Document">
-        <TextBlock Grid.Row="0" Text="{Binding Context.Path}" FontSize="12" Opacity="0.7"/>
-        <TextBox Grid.Row="1" Text="{Binding Context.Content}" AcceptsReturn="True"/>
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-          <Button Content="Save" Command="{Binding Context.SaveCommand}" Margin="5"/>
-          <Button Content="Revert" Command="{Binding Context.RevertCommand}" Margin="5"/>
-        </StackPanel>
-      </Grid>
+      <ContentControl x:DataType="Document" DataContext="{Binding Context}">
+        <Grid RowDefinitions="Auto,*,Auto" x:DataType="local:FileModel">
+          <TextBlock Grid.Row="0" Text="{Binding Path}" FontSize="12" Opacity="0.7"/>
+          <TextBox Grid.Row="1" Text="{Binding Content}" AcceptsReturn="True"/>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Save" Command="{Binding SaveCommand}" Margin="5"/>
+            <Button Content="Revert" Command="{Binding RevertCommand}" Margin="5"/>
+          </StackPanel>
+        </Grid>
+      </ContentControl>
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
 </DocumentDock>
@@ -427,6 +437,57 @@ For simple static content, you can define it directly in XAML:
 </dock:DocumentDock>
 ```
 
+### Direct content lifecycle and renderer controls
+
+Direct content declared inside `Document` or `Tool` is template content. Dock
+materializes it when the dockable is presented, and can later detach and reuse it
+when tabs move or layouts change. It is therefore not part of the parent window's
+visual tree or name scope when the window's `InitializeComponent()` returns.
+
+Do not initialize nested content by calling `FindControl` from the parent window:
+
+```csharp
+// The document template has not been materialized here, so this can return null.
+var renderer = this.FindControl<RenderWindowControl>("Renderer");
+```
+
+This is especially important for `OpenGlControlBase`, `NativeControlHost`, web
+views, media controls, and other controls that allocate resources when attached.
+Keep their setup with the content itself:
+
+- Prefer a view model plus a compiled `DataTemplate` for application state.
+- Put renderer-specific attachment and cleanup in a focused custom control,
+  attached behavior, or service owned by that control.
+- Let the integration react to its own attach/detach lifecycle instead of the
+  parent window's lifecycle.
+- Declare the renderer directly as document content when an extra wrapper is not
+  needed.
+
+For example, the document can host a dedicated scene control whose behavior owns
+the renderer lifecycle:
+
+```xaml
+<dock:Document Id="Scene" Title="Scene">
+  <local:SceneControl />
+</dock:Document>
+```
+
+`SceneControl` can contain the third-party renderer and a behavior that initializes
+it when attached and releases resources when detached. The view remains passive,
+while the integration code has a single lifecycle responsibility.
+
+If a `ContentControl` wrapper is required, make its content alignment explicit so
+a renderer without an intrinsic desired size fills the available document area:
+
+```xaml
+<dock:Document Id="Scene" Title="Scene">
+  <ContentControl HorizontalContentAlignment="Stretch"
+                  VerticalContentAlignment="Stretch">
+    <local:SceneControl />
+  </ContentControl>
+</dock:Document>
+```
+
 ## Working with Tools
 
 Tools work similarly to documents. Here's an example using MVVM base classes:
@@ -532,7 +593,7 @@ var document = new Document
 
 **Solutions**:
 1. Ensure `DocumentTemplate` has proper `x:DataType="Document"` on the root element
-2. Access your model properties via `{Binding Context.PropertyName}` not `{Binding PropertyName}`
+2. For compiled bindings, rebind a subtree to `{Binding Context}` and set `x:DataType` to your model type
 3. Verify your model implements `INotifyPropertyChanged`
 4. Check that your collection items have the expected property names (Title, Name, etc.)
 
@@ -547,7 +608,9 @@ var document = new Document
 <DocumentTemplate>
   <StackPanel x:DataType="Document">
     <TextBlock Text="{Binding Title}"/>
-    <TextBlock Text="{Binding Context.Content}"/>
+    <StackPanel DataContext="{Binding Context}">
+      <TextBlock x:DataType="vm:MyDocumentModel" Text="{Binding Content}"/>
+    </StackPanel>
   </StackPanel>
 </DocumentTemplate>
 ```
@@ -747,28 +810,30 @@ public class FileManagerViewModel : INotifyPropertyChanged
   </DockControl.Factory>
   
   <RootDock>
-    <DocumentDock ItemsSource="{Binding OpenFiles}">
+    <DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).OpenFiles}">
       <DocumentDock.DocumentTemplate>
         <DocumentTemplate>
-          <Grid RowDefinitions="Auto,*,Auto" x:DataType="Document">
-            <!-- File path header -->
-            <TextBlock Grid.Row="0" Text="{Binding Context.FilePath}" 
-                       FontSize="10" Opacity="0.7" Margin="5"/>
-            
-            <!-- Main content editor -->
-            <TextBox Grid.Row="1" Text="{Binding Context.Content}" 
-                     AcceptsReturn="True" AcceptsTab="True"
-                     FontFamily="Consolas" Margin="5"/>
-            
-            <!-- Action buttons -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" 
-                        HorizontalAlignment="Right" Margin="5">
-              <Button Content="Save" Command="{Binding Context.SaveCommand}"
-                      IsEnabled="{Binding Context.IsModified}"/>
-              <Button Content="Save As" Command="{Binding Context.SaveAsCommand}"
-                      Margin="5,0,0,0"/>
-            </StackPanel>
-          </Grid>
+          <ContentControl x:DataType="Document" DataContext="{Binding Context}">
+            <Grid RowDefinitions="Auto,*,Auto" x:DataType="local:FileDocument">
+              <!-- File path header -->
+              <TextBlock Grid.Row="0" Text="{Binding FilePath}"
+                         FontSize="10" Opacity="0.7" Margin="5"/>
+
+              <!-- Main content editor -->
+              <TextBox Grid.Row="1" Text="{Binding Content}"
+                       AcceptsReturn="True" AcceptsTab="True"
+                       FontFamily="Consolas" Margin="5"/>
+
+              <!-- Action buttons -->
+              <StackPanel Grid.Row="2" Orientation="Horizontal"
+                          HorizontalAlignment="Right" Margin="5">
+                <Button Content="Save" Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsModified}"/>
+                <Button Content="Save As" Command="{Binding SaveAsCommand}"
+                        Margin="5,0,0,0"/>
+              </StackPanel>
+            </Grid>
+          </ContentControl>
         </DocumentTemplate>
       </DocumentDock.DocumentTemplate>
     </DocumentDock>

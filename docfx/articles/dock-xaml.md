@@ -49,7 +49,6 @@ These steps outline how to set up a small Dock application that defines its layo
    using System;
    using Avalonia.Controls;
    using Avalonia.Controls.Templates;
-   using Dock.Model.Core;
    using StaticViewLocator;
 
    namespace MyDockApp;
@@ -66,16 +65,18 @@ These steps outline how to set up a small Dock application that defines its layo
            if (s_views.TryGetValue(type, out var func))
                return func.Invoke();
 
-           // Fallback for simple content
-           if (data is string text)
-               return new TextBox { Text = text, AcceptsReturn = true };
-
-           return new TextBlock { Text = data.ToString() };
+           throw new Exception($"Unable to create view for type: {type}");
        }
 
        public bool Match(object? data)
        {
-           return data is IDockable || data != null;
+           if (data is null)
+           {
+               return false;
+           }
+
+           var type = data.GetType();
+           return s_views.ContainsKey(type);
        }
    }
    ```
@@ -146,7 +147,7 @@ These steps outline how to set up a small Dock application that defines its layo
 
    **Option B: ItemsSource Data Binding (Recommended)**
 
-   For dynamic document management, use `ItemsSource` to bind to your data collections:
+   For dynamic document management, use `ItemsSource` to bind to your data collections. If this snippet is inside a window, name the window `RootWindow` and import the view model namespace as `vm`:
 
    ```xaml
    <DockControl InitializeLayout="True" InitializeFactory="True">
@@ -154,14 +155,18 @@ These steps outline how to set up a small Dock application that defines its layo
            <Factory />
        </DockControl.Factory>
        <RootDock>
-           <DocumentDock ItemsSource="{Binding Documents}">
+           <DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}">
                <DocumentDock.DocumentTemplate>
                    <DocumentTemplate>
                        <StackPanel Margin="10" x:DataType="Document">
                            <TextBlock Text="Title:" FontWeight="Bold"/>
                            <TextBox Text="{Binding Title}" Margin="0,0,0,10"/>
-                           <TextBlock Text="Content:" FontWeight="Bold"/>
-                           <TextBox Text="{Binding Context.Content}" AcceptsReturn="True" Height="200"/>
+                           <StackPanel DataContext="{Binding Context}">
+                               <StackPanel x:DataType="local:FileDocument">
+                                   <TextBlock Text="Content:" FontWeight="Bold"/>
+                                   <TextBox Text="{Binding Content}" AcceptsReturn="True" Height="200"/>
+                               </StackPanel>
+                           </StackPanel>
                        </StackPanel>
                    </DocumentTemplate>
                </DocumentDock.DocumentTemplate>

@@ -118,11 +118,16 @@ OpenFiles.Remove(fileToClose);
 ```
 
 With XAML binding:
+
+The examples below assume the containing window is named `RootWindow` and the view model namespace is imported as `vm`.
+
 ```xaml
-<DocumentDock ItemsSource="{Binding OpenFiles}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).OpenFiles}">
     <DocumentDock.DocumentTemplate>
         <DocumentTemplate>
-            <TextEditor Text="{Binding Context.Content}" x:DataType="Document"/>
+            <ContentControl x:DataType="Document" DataContext="{Binding Context}">
+                <TextEditor x:DataType="models:FileModel" Text="{Binding Content}"/>
+            </ContentControl>
         </DocumentTemplate>
     </DocumentDock.DocumentTemplate>
 </DocumentDock>
@@ -131,7 +136,7 @@ With XAML binding:
 Tool panes can be generated the same way:
 
 ```xaml
-<ToolDock ItemsSource="{Binding OpenTools}" Alignment="Left">
+<ToolDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).OpenTools}" Alignment="Left">
     <ToolDock.ToolTemplate>
         <ToolTemplate>
             <TextBlock Text="{Binding Context.Description}" x:DataType="Tool"/>

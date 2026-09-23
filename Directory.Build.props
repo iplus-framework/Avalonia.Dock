@@ -11,7 +11,8 @@
   <!--<Import Condition="'$(UseAvaloniaFork)' == 'True'" Project="../iPlus/build/AvaloniaBaseBuildServicesInclude.props" />-->
  <!-- End iPlus settings and overrides -->  
   <PropertyGroup>
-    <VersionPrefix>12.0.0.1</VersionPrefix>
+    <VersionPrefix>12.1.0.6</VersionPrefix>
+    <DockV11VersionPrefix>11.3.20</DockV11VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <Authors>Wiesław Šoltés</Authors>
     <Company>Wiesław Šoltés</Company>

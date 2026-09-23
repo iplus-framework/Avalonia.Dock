@@ -56,11 +56,11 @@ Control whether closing a generated container removes the source item:
 - Per-tool dock override: `ToolDock.CanUpdateItemsSourceOnUnregister` (`bool?`, `null` = global)
 
 ```xaml
-<DocumentDock ItemsSource="{Binding Documents}"
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}"
               CanUpdateItemsSourceOnUnregister="False" />
 
-<ToolDock ItemsSource="{Binding Tools}"
-          CanUpdateItemsSourceOnUnregister="{Binding ToolUnregisterPolicy}" />
+<ToolDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Tools}"
+          CanUpdateItemsSourceOnUnregister="{Binding #RootWindow.((vm:MainViewModel)DataContext).ToolUnregisterPolicy}" />
 ```
 
 ## Per-Dock Theme and Template Selector APIs
@@ -97,13 +97,13 @@ Template selectors return template content for an item. They can return:
   </ControlTheme>
 </Window.Resources>
 
-<DocumentDock ItemsSource="{Binding Documents}"
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}"
               DocumentItemContainerTheme="GeneratedDocumentTheme"
               DocumentItemTemplateSelector="{StaticResource DocumentSelector}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
       <!-- fallback template for items not handled by selector -->
-      <TextBlock Text="{Binding Context.Title}" />
+      <TextBlock x:DataType="Document" Text="{Binding Title}" />
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
 </DocumentDock>
@@ -215,25 +215,31 @@ public class MainViewModel : INotifyPropertyChanged
 Bind the collection to `DocumentDock.ItemsSource` and define a `DocumentTemplate`:
 
 ```xaml
-<DocumentDock ItemsSource="{Binding Documents}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
       <StackPanel Margin="10" x:DataType="Document">
         <TextBlock Text="Document Properties" FontWeight="Bold" Margin="0,0,0,10"/>
         
         <TextBlock Text="Title:" FontWeight="SemiBold"/>
-        <TextBox Text="{Binding Context.Title}" Margin="0,0,0,10"/>
+        <TextBox Text="{Binding Title}" Margin="0,0,0,10"/>
         
-        <TextBlock Text="Content:" FontWeight="SemiBold"/>
-        <TextBox Text="{Binding Context.Content}" 
-                 AcceptsReturn="True" 
-                 TextWrapping="Wrap"
-                 Height="200"/>
+        <StackPanel DataContext="{Binding Context}">
+          <StackPanel x:DataType="models:FileDocument">
+            <TextBlock Text="Content:" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Content}"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Height="200"/>
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
 </DocumentDock>
 ```
+
+When `DocumentDock` is declared under `RootDock`, bind `ItemsSource` through an explicit named owner (`RootWindow` in this example). The Dock model tree has its own binding context at runtime, so a shorthand `ItemsSource="{Binding Documents}"` can make compiled bindings try to cast `RootDock` to your view model.
 
 ## Property Mapping
 
@@ -268,12 +274,15 @@ public class DocumentModel
 ```xaml
 <DocumentTemplate>
   <Grid x:DataType="Document">
-    <!-- Access your model properties via Context -->
-    <TextBlock Text="{Binding Context.Title}"/>
-    <TextBox Text="{Binding Context.Content}"/>
-    
-    <!-- You can also access Document properties directly -->
+    <!-- Access generated Document properties directly -->
     <TextBlock Text="{Binding Title}"/>
+
+    <!-- Rebind to the source model before using its properties -->
+    <StackPanel DataContext="{Binding Context}">
+      <StackPanel x:DataType="models:FileDocument">
+        <TextBox Text="{Binding Content}"/>
+      </StackPanel>
+    </StackPanel>
   </Grid>
 </DocumentTemplate>
 ```
@@ -347,7 +356,8 @@ public class DataView : INotifyPropertyChanged
 Bind a tools collection to `ToolDock.ItemsSource` and define a `ToolTemplate`:
 
 ```xaml
-<ToolDock Alignment="Left" ItemsSource="{Binding Tools}">
+<ToolDock Alignment="Left"
+          ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Tools}">
   <ToolDock.ToolTemplate>
     <ToolTemplate>
       <StackPanel Margin="10" x:DataType="Tool">
@@ -395,17 +405,21 @@ public enum DocumentType
 ```
 
 ```xaml
-<DocumentDock ItemsSource="{Binding Documents}">
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}">
   <DocumentDock.DocumentTemplate>
     <DocumentTemplate>
-      <ContentControl x:DataType="Document">
-        <ContentControl.Content>
-          <MultiBinding Converter="{StaticResource DocumentTypeConverter}">
-            <Binding Path="Context.Type"/>
-            <Binding Path="Context.Data"/>
-          </MultiBinding>
-        </ContentControl.Content>
-      </ContentControl>
+      <StackPanel x:DataType="Document">
+        <StackPanel DataContext="{Binding Context}">
+          <ContentControl x:DataType="models:DocumentModel">
+            <ContentControl.Content>
+              <MultiBinding Converter="{StaticResource DocumentTypeConverter}">
+                <Binding Path="Type"/>
+                <Binding Path="Data"/>
+              </MultiBinding>
+            </ContentControl.Content>
+          </ContentControl>
+        </StackPanel>
+      </StackPanel>
     </DocumentTemplate>
   </DocumentDock.DocumentTemplate>
 </DocumentDock>
@@ -443,11 +457,11 @@ Assign the generator per dock:
   <local:MyGenerator x:Key="MyGenerator" />
 </Window.Resources>
 
-<ToolDock ItemsSource="{Binding Tools}"
+<ToolDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Tools}"
           ToolTemplate="{StaticResource ToolTemplate}"
           ItemContainerGenerator="{StaticResource MyGenerator}" />
 
-<DocumentDock ItemsSource="{Binding Documents}"
+<DocumentDock ItemsSource="{Binding #RootWindow.((vm:MainViewModel)DataContext).Documents}"
               DocumentTemplate="{StaticResource DocumentTemplate}"
               ItemContainerGenerator="{StaticResource MyGenerator}" />
 ```
@@ -533,4 +547,5 @@ public class CommandDocument : INotifyPropertyChanged
 - [Document and Tool Content Guide](dock-content-guide.md) - Comprehensive content setup
 - [Dock Advanced Topics](dock-advanced.md) - Advanced docking scenarios
 - [Dock FAQ](dock-faq.md) - Common questions and troubleshooting
+- [`samples/DockQuickStartSample`](https://github.com/wieslawsoltes/Dock/tree/master/samples/DockQuickStartSample) - Minimal runnable XAML `ItemsSource` sample with compiled bindings
 - [`samples/DockXamlReactiveUISample`](https://github.com/wieslawsoltes/Dock/tree/master/samples/DockXamlReactiveUISample) - ReactiveUI sample using both document and tool items sources
